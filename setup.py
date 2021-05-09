@@ -67,7 +67,7 @@ setup(
         "Bug Tracker": "https://github.com/Piphi5/globe-observer-utils/issues"
     },
     keywords="GlobeObserver GLOBE mosquito landcover",
-    packages=find_packages(include=["go_utils"]),
+    packages=find_packages(include=["go_utils", "go_utils/*"]),
     include_package_data=True,
     zip_safe=True,
     setup_requires=["pytest-runner"],
