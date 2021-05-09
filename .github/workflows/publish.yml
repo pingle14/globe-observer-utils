@@ -19,8 +19,7 @@ jobs:
         python -m
         pip install --upgrade build
     - name: Build a binary wheel and a source tarball
-      run: >-
-        python -m build
+      run: python setup.py bdist_wheel
     - name: Publish distribution to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
