@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@master
+      with:
+        fetch-depth: 0
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
@@ -19,7 +21,7 @@ jobs:
         python -m
         pip install --upgrade build
     - name: Build a binary wheel and a source tarball
-      run: python setup.py bdist_wheel
+      run: python -m build
     - name: Publish distribution to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
       with:
