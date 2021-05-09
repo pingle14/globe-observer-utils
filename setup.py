@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 setup_dir = dirname(abspath(__file__))
-git_dir = join(setup_dir, "../.git")
+git_dir = join(setup_dir, ".git")
 version_file = join(setup_dir, "version.py")
 package_name = "go_utils"
 
@@ -67,7 +67,7 @@ setup(
     zip_safe=True,
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
-    install_requires=["numpy>=1.20.0", "pandas>=1.2.0"],
+    install_requires=["numpy>=1.19.0", "pandas>=1.1.5", "requests>=2.24.0"],
     license="MIT License",
     classifiers=[
         "Intended Audience :: Education",
