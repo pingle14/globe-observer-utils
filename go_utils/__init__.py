@@ -1,1 +1,1 @@
-from go_utils.general.download import *
+from go_utils.download import *
