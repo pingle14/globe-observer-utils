@@ -9,11 +9,11 @@ jobs:
     name: Publish Package to PyPI and Test PyPI
     runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: Set up Python 3.7
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.7
     - name: Install pypa/build
@@ -23,7 +23,7 @@ jobs:
     - name: Build a binary wheel and a source tarball
       run: python -m build
     - name: Publish distribution to Test PyPI
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1.4.1
       with:
         verbose: true
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
