@@ -60,8 +60,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="IGES",
-    maintainer="Matteo Kimura",
-    maintainer_email="mateus.sakata@gmail.com",
+    maintainer="Matteo Kimura, Prachi Ingle, Pratham Babaria",
+    maintainer_email="mateus.sakata@gmail.com, phna14@gmail.com, prathambabaria1@gmail.com",
     url="https://github.com/Piphi5/globe-observer-utils",
     project_urls={
         "Bug Tracker": "https://github.com/Piphi5/globe-observer-utils/issues"
