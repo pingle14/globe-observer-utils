@@ -1,10 +1,34 @@
 import pytest
-from go_utils import get_api_data
+import json
+import logging
+from go_utils import *
+
+logging.basicConfig(level=logging.WARNING)
+
+globe_protocols = ["mosquito_habitat_mapper", "land_covers"]
 
 
-def test_mhm_lc_download():
-    mhm_df = get_api_data("mosquito_habitat_mapper")
-    assert not mhm_df.empty
+@pytest.mark.parametrize("protocol", globe_protocols)
+def test_default_download(protocol):
+    try:
+        df = get_api_data(protocol)
+        assert not df.empty
+    except RuntimeError:
+        logging.warning("Data Request failed, API may be down.")
 
-    lc_df = get_api_data("land_covers")
-    assert not lc_df.empty
+
+def test_bad_api_call():
+    with pytest.raises(RuntimeError, match="settings"):
+        get_api_data("asdf")
+
+
+def test_globe_down():
+    globe_down_json = """{
+    "type": "FeatureCollection",
+    "name": "GLOBE-data",
+    "features": [],
+    "message": "failure: Connection refused"
+    }"""
+
+    with pytest.raises(RuntimeError, match="down"):
+        parse_api_data(json.loads(globe_down_json), [])

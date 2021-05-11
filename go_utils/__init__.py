@@ -1,5 +1,7 @@
 from go_utils.download import *
 
+__docformat__ = "numpy"
+
 __doc__ = """
 go_utils contains utilities for interfacing with the GLOBE Observer datasets, primarily the Mosquito Habitat Mapper and Landcover.
 
