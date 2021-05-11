@@ -18,15 +18,24 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install package
-      run: pip install -e .
     - name: Build
       run: | 
         pip install --upgrade build
         python -m build
+    - name: Run Pytest
+      run: |
+        pip install -e .
+        python setup.py test  
+  format:
+    name: Black Formatter Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Python 3.7
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
     - name: Check formatting
       run: |
         pip install black
         black --check --diff ./
-    - name: Run Pytest
-      run: python setup.py test  
