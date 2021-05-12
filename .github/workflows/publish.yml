@@ -46,7 +46,7 @@ jobs:
           python-version: 3.7
       - name: Clone docs repo
         run:
-          git clone https://github.com/Piphi5/globe-observer-utils-docs.git
+          git clone https://github.com/IGES-Geospatial/globe-observer-utils-docs.git
       - name: Generate Docs
         run: |
           pip install -e .
@@ -58,7 +58,7 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
           source-directory: 'globe-observer-utils-docs'
-          destination-github-username: 'Piphi5'
+          destination-github-username: 'IGES-Geospatial'
           destination-repository-name: 'globe-observer-utils-docs'
-          user-email: globe-observer-utils-docs
+          user-email: uploadingacct71@gmail.com
           target-branch: main
