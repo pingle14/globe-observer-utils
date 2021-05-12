@@ -8,8 +8,11 @@ Run `pip install go-utils` to install this package.
 
 ## Contributing
 
-### Requirements
+### Formatter
 This codebase uses the black formatter to check code format. Run `pip install black` to get the package. Then after you make changes, run `black ./` before commiting to have your code automatically formatted.
+
+### Previewing Documentation
+The documentation for this package is built by the [pdoc module](https://github.com/mitmproxy/pdoc). Run `pip install pdoc` to get the package. Then to preview the documentation, run `pdoc go_utils/` which will locally host the documentation website on your computer. 
 
 ### Contribution Steps
 1. [Fork](https://github.com/IGES-Geospatial/globe-observer-utils/fork) this Repo
