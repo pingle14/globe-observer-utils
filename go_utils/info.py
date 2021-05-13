@@ -143,8 +143,7 @@ Useful stored values for GLOBE Observer scripts
 
 Stored Values
 -------------
-start_date - the default starting date of GLOBE Obsever data requests
-end_date - the current date 
-regions_dict - contains all the different GLOBE regions and the countries associated with each region  
-
+- start_date: the default starting date of GLOBE Obsever data requests in YYYY-MM-DD Form.
+- end_date: the current date in YYYY-MM-DD Form.
+- regions_dict: contains all the different GLOBE regions and the countries associated with each region
 """
