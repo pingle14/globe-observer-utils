@@ -1,9 +1,8 @@
 import pandas as pd
-import numpy as np
 import requests
 import logging
 
-from go_utils.info import *
+from go_utils.info import start_date, end_date
 
 
 def parse_api_data(response_json):

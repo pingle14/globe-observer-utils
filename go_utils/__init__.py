@@ -1,4 +1,6 @@
-from go_utils.download import *
+# flake8: noqa
+
+from go_utils.download import get_api_data
 
 __docformat__ = "numpy"
 

@@ -1,15 +1,11 @@
 from datetime import date
-from glob import glob
-from os.path import basename
 from os.path import dirname
 from os.path import exists
 from os.path import join
-from os.path import splitext
 from os.path import abspath
 from setuptools import find_packages
 from setuptools import setup
 import subprocess
-import sys
 
 setup_dir = dirname(abspath(__file__))
 git_dir = join(setup_dir, ".git")
