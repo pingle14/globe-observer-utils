@@ -58,9 +58,10 @@ setup(
     author="IGES",
     maintainer="Matteo Kimura, Prachi Ingle, Pratham Babaria",
     maintainer_email="mateus.sakata@gmail.com, phna14@gmail.com, prathambabaria1@gmail.com",
-    url="https://github.com/Piphi5/globe-observer-utils",
     project_urls={
-        "Bug Tracker": "https://github.com/Piphi5/globe-observer-utils/issues"
+        "Source Code": "https://github.com/IGES-Geospatial/globe-observer-utils",
+        "Documentation": "https://iges-geospatial.github.io/globe-observer-utils-docs/go_utils.html",
+        "Bug Tracker": "https://github.com/IGES-Geospatial/globe-observer-utils/issues",
     },
     keywords="GlobeObserver GLOBE mosquito landcover",
     packages=find_packages(),
