@@ -8,20 +8,47 @@ Run `pip install go-utils` to install this package.
 
 ## Contributing
 
-### Formatter
-This codebase uses the black formatter to check code format. Run `pip install black` to get the package. Then after you make changes, run `black ./` before commiting to have your code automatically formatted.
-
-### Previewing Documentation
-The documentation for this package is built by the [pdoc module](https://github.com/mitmproxy/pdoc). Run `pip install pdoc` to get the package. Then to preview the documentation, run `pdoc go_utils/` which will locally host the documentation website on your computer. 
-
-### Contribution Steps
 1. [Fork](https://github.com/IGES-Geospatial/globe-observer-utils/fork) this Repo
 2. Clone the Repo onto your computer
 3. Create a branch (`git checkout -b new-feature`)
 4. Make Changes
-5. Run Black Formatter (`pip install black` to download and `black ./` to run).
+5. Run necessary quality assurance tools ([Formatter](#Formatter), [Linter](#Linter) ,[Unit Tests](#Unit-Tests), [Documentation](#Previewing-Documentation)).
 6. Add your changes (`git commit -am "Commit Message"` or `git add .` followed by `git commit -m "Commit Message"`)
 7. Push your changes to the repo (`git push origin new-feature`)
 8. Create a pull request
 
 Do note you can locally build the package with `pip install -e .` and run unit tests with `pytest -s go_utils`.
+
+There are also several tools used by this repository to ensure code quality:
+
+### Formatter
+This codebase uses the [black formatter](https://github.com/psf/black) to check code format. 
+
+1. Run `pip install black` to get the package.
+2. After making changes, run `black ./`.
+
+This will automatically format your code to Python standards.
+
+### Linter
+This codebase uses [flake8](https://github.com/pycqa/flake8) to lint code. 
+
+1. Run `pip install flake8` to get the package.
+2. After making changes, run `flake8`.
+
+The linter will notify you of any code that isn't up to Python standards.
+
+### Unit Tests
+This codebase uses [pytest](https://github.com/pytest-dev/pytest) to run unit tests for the code. 
+
+1. Run `pip install pytest` to get the package. 
+2. After making changes, run `pytest`.
+
+These tests will make sure the code performs as expected.
+
+### Previewing Documentation
+The documentation for this package is built by the [pdoc module](https://github.com/mitmproxy/pdoc). 
+
+1. Run `pip install pdoc` to get the package.
+2. To preview the documentation, run `pdoc go_utils/`.
+
+This will locally host an updated documentation website which lets you preview any changes you may have made to the documentation.
