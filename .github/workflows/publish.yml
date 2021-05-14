@@ -51,7 +51,7 @@ jobs:
         run: |
           pip install -e .
           pip install pdoc
-          pdoc --docformat numpy -o globe-observer-utils-docs go_utils/.
+          pdoc --t doc_template --docformat numpy -o globe-observer-utils-docs go_utils/.
       - name: Push docs to doc repo
         uses: cpina/github-action-push-to-another-repository@main
         env:

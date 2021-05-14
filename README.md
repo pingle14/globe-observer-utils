@@ -49,6 +49,6 @@ These tests will make sure the code performs as expected.
 The documentation for this package is built by the [pdoc module](https://github.com/mitmproxy/pdoc). 
 
 1. Run `pip install pdoc` to get the package.
-2. To preview the documentation, run `pdoc go_utils/`.
+2. To preview the documentation, run `pdoc -t doc_template --docformat numpy go_utils`.
 
 This will locally host an updated documentation website which lets you preview any changes you may have made to the documentation.
