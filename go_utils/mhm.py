@@ -12,6 +12,33 @@ from go_utils.cleanup import (
 )
 
 
+__doc__ = r"""
+
+## Mosquito Specific Cleanup Procedures
+
+### Converting Larvae Data to Integers
+Larvae Data is stored as a string in the raw GLOBE Observer dataset. To facillitate analysis, [this method](#larvae_to_num) converts this data to numerical data.
+
+It needs to account for 4 types of data:
+1. Regular Data: Converts it to a number
+2. Extraneously large data ($\geq 100$ as its hard to count more than that amount accurately): To maintain the information from that entry, the `LarvaeCountMagnitude` flag is used to indicate the real value
+3. Ranges (e.g. "25-50"): Chooses the lower bound and set the `LarvaeCountIsRangeFlag` to true.
+4. Null Values: Sets null values to $-9999$
+
+
+It generates the following flags:
+- `LarvaeCountMagnitude`: The integer flag contains the order of magnitude (0-4) by which the larvae count exceeds the maximum Larvae Count of 100. This is calculated by $1 + \lfloor \log{\frac{num}{100}} \rfloor$. As a result:
+    - `0`: Corresponds to a Larvae Count $\leq 100$
+    - `1`: Corresponds to a Larvae Count between $100$ and $999$
+    - `2`: Corresponds to a Larvae Count between $1000$ and $9999$
+    - `3`: Corresponds to a Larvae Count between $10,000$ and $99,999$
+    - `4`: Corresponds to a Larvae Count $\geq 100,000$
+- `LarvaeCountIsRange`: Either a $1$ which indicates the entry was a range (e.g. 25-50) or $0$ which indicates the entry wasn't a range.
+
+Additionally, there were extremely large values that Python was unable to process (`1e+27`) and so there was an initial preprocessing step to set those numbers to 100000 (which corresponds to the maximum magnitude flag).
+"""
+
+
 def cleanup_column_prefix(df):
     """Method for shortening raw mosquito habitat mapper column names.
 
@@ -33,26 +60,9 @@ def cleanup_column_prefix(df):
 
 
 def larvae_to_num(mhm_df, larvae_count_col="mhm_LarvaeCount"):
-    r"""Converts the Larvae Count of the Mosquito Habitat Mapper Dataset from being stored as a string to integers.
+    """Converts the Larvae Count of the Mosquito Habitat Mapper Dataset from being stored as a string to integers.
 
-    It needs to account for 4 types of data:
-    1. Regular Data: Converts it to a number
-    2. Extraneously large data ($geq 100$ as its hard to count more than that amount accurately): To maintain the information from that entry, the `LarvaeCountMagnitude` flag is used to indicate the real value
-    3. Ranges (e.g. "25-50"): Chooses the lower bound and set the `LarvaeCountIsRangeFlag` to true.
-    4. Null Values: Sets null values to $-9999$
-
-
-    It generates the following flags:
-    - `LarvaeCountMagnitude`: The integer flag contains the order of magnitude (0-4) by which the larvae count exceeds the maximum Larvae Count of 100. This is calculated by $1 + \lfloor \log{\frac{num}{100}} \rfloor$. As a result:
-        - `0`: Corresponds to a Larvae Count $\leq 100$
-        - `1`: Corresponds to a Larvae Count between $100$ and $999$
-        - `2`: Corresponds to a Larvae Count between $1000$ and $9999$
-        - `3`: Corresponds to a Larvae Count between $10,000$ and $99,999$
-        - `4`: Corresponds to a Larvae Count $\geq 100,000$
-    - `LarvaeCountIsRange`: Either a $1$ which indicates the entry was a range (e.g. 25-50) or $0$ which indicates the entry wasn't a range.
-
-    Additionally, there were extremely large values that Python was unable to process (`1e+27`) and so there was an initial preprocessing step to set those numbers to 100000 (which corresponds to the maximum magnitude flag).
-
+    See [here](#converting-larvae-data-to-integers) for more information.
 
     Parameters
     ----------
