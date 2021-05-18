@@ -41,7 +41,7 @@ The linter will notify you of any code that isn't up to Python standards.
 This codebase uses [pytest](https://github.com/pytest-dev/pytest) to run unit tests for the code. 
 
 1. Run `pip install pytest` to get the package. 
-2. After making changes, run `pytest`.
+2. After making changes, you can run `pytest` to run unit tests. **NOTE:** There are tests that verify the methods that download data from the internet which take incredibly long. To avoid these tests, run `pytest -m "not downloadtest"` which will skip those tests.
 
 These tests will make sure the code performs as expected.
 
