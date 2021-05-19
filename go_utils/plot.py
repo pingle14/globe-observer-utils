@@ -1,3 +1,4 @@
+import logging
 import math
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -28,7 +29,7 @@ def plot_freq_bar(df, protocol, column, title, plot_type="bar", log_scale=False)
     col_vals.reset_index(inplace=True)
     col_vals.columns = ["index", "Count"]
     if len(col_vals) <= 1:
-        return RuntimeError(
+        logging.warning(
             f"There is only one value for this column: {col_vals['index'][0]}: {col_vals['Count'][0]}"
         )
     plt.figure(figsize=(10, 6))
