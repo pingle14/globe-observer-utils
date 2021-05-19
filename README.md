@@ -53,7 +53,7 @@ To run tests relevant to a specific function/area, there are several markers tha
 - `downloadtest`: tests for functions that download GLOBE data over the internet.
 - `cleanup`: tests for functions involved in the cleanup procedure
 
-To specifically call a subset of tests, the `-m` flag must be used (e.g. `pytest -m "landcover"`). Using the `or` keyword can be used to include multiple subsets (e.g. `pytest -m "landcover or mosquito"`), but do note that the current markers aren't mutually exclusive. Using the `not` keyword can be used to exclude subsets (e.g. `pytest -m "not downloadtest"`), this is particularly useful for excluding the download tests as those tend to take a considerable amount of time.
+To specifically call a subset of tests, the `-m` flag must be used (e.g. `pytest -m "landcover"`). Using the `or` keyword can be used to include multiple subsets (e.g. `pytest -m "landcover or mosquito"`), but do note that the current markers aren't mutually exclusive (the `and` keyword accomplishes this). Using the `not` keyword can be used to exclude subsets (e.g. `pytest -m "not downloadtest"`), this is particularly useful for excluding the download tests as those tend to take a considerable amount of time.
 
 ### Previewing Documentation
 The documentation for this package is built by the [pdoc module](https://github.com/mitmproxy/pdoc). 

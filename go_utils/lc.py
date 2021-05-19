@@ -2,7 +2,13 @@ import numpy as np
 import pandas as pd
 import re
 
-from go_utils.cleanup import replace_column_prefix
+from go_utils.cleanup import (
+    replace_column_prefix,
+    remove_homogenous_cols,
+    rename_latlon_cols,
+    standardize_null_vals,
+    round_cols,
+)
 
 
 __doc__ = """
@@ -247,3 +253,231 @@ def unpack_classifications(lc_df):
     )
     lc_df = _move_cols(lc_df, cols_to_move=direction_data_cols, ref_col="lc_pid")
     return lc_df.apply(_set_directions, axis=1)
+
+
+def photo_bit_flags(df, up, down, north, south, east, west):
+    """
+    Creates the following flags:
+    - `lc_PhotoCount`: The number of valid photos per record.
+    - `lc_RejectedCount`: The number of photos that were rejected per record.
+    - `lc_PendingCount`: The number of photos that are pending approval per record.
+    - `lc_PhotoBitBinary`: A string that represents the presence of a photo in the Up, Down, North, South, East, and West directions. For example, if the entry is `110100`, that indicates that there is a valid photo for the Up, Down, and South Directions but no valid photos for the North, East, and West Directions.
+    - `lc_PhotoBitDecimal`: The numerical representation of the lc_PhotoBitBinary string.
+
+    This modifies the DataFrame itself.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A mosquito habitat mapper DataFrame
+    up : str
+        The column name in the land cover DataFrame that contains the url for the upwards photo.
+    down : str
+        The column name in the land cover DataFrame that contains the url for the downwards photo.
+    north : str
+        The column name in the land cover DataFrame that contains the url for the north photo.
+    south : str
+        The column name in the land cover DataFrame that contains the url for the south photo.
+    east : str
+        The column name in the land cover DataFrame that contains the url for the east photo.
+    west : str
+        The column name in the land cover DataFrame that contains the url for the west photo.
+    """
+
+    def pic_data(*args):
+        pic_count = 0
+        rejected_count = 0
+        pending_count = 0
+        empty_count = 0
+        valid_photo_bit_mask = ""
+
+        for entry in args:
+            if not pd.isna(entry) and "http" in entry:
+                valid_photo_bit_mask += "1"
+                pic_count += entry.count("http")
+            else:
+                valid_photo_bit_mask += "0"
+            if pd.isna(entry):
+                empty_count += 1
+            else:
+                pending_count += entry.count("pending")
+                rejected_count += entry.count("rejected")
+        return (
+            pic_count,
+            rejected_count,
+            pending_count,
+            empty_count,
+            valid_photo_bit_mask,
+            int(valid_photo_bit_mask, 2),
+        )
+
+    get_photo_data = np.vectorize(pic_data)
+    (
+        df["lc_PhotoCount"],
+        df["lc_RejectedCount"],
+        df["lc_PendingCount"],
+        df["lc_EmptyCount"],
+        df["lc_PhotoBitBinary"],
+        df["lc_PhotoBitDecimal"],
+    ) = get_photo_data(
+        df[up].to_numpy(),
+        df[down].to_numpy(),
+        df[north].to_numpy(),
+        df[south].to_numpy(),
+        df[east].to_numpy(),
+        df[west].to_numpy(),
+    )
+
+
+def classification_bit_flags(df, north, south, east, west):
+    """
+    Creates the following flags:
+    - `lc_ClassificationCount`: The number of classifications per record.
+    - `lc_BitBinary`: A string that represents the presence of a classification in the North, South, East, and West directions. For example, if the entry is `1101`, that indicates that there is a valid classification for the North, South, and West Directions but no valid classifications for the East Direction.
+    - `lc_BitDecimal`: The number of photos that are pending approval per record.
+
+    This modifies the DataFrame itself.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A mosquito habitat mapper DataFrame
+    north : str
+        The column name in the land cover DataFrame that contains the north classification.
+    south : str
+        The column name in the land cover DataFrame that contains the south classification.
+    east : str
+        The column name in the land cover DataFrame that contains the east classification.
+    west : str
+        The column name in the land cover DataFrame that contains the west classification.
+    """
+
+    def classification_data(*args):
+        classification_count = 0
+        classification_bit_mask = ""
+        for entry in args:
+            if pd.isna(entry) or entry is np.nan:
+                classification_bit_mask += "0"
+            else:
+                classification_count += 1
+                classification_bit_mask += "1"
+        return (
+            classification_count,
+            classification_bit_mask,
+            int(classification_bit_mask, 2),
+        )
+
+    get_classification_data = np.vectorize(classification_data)
+
+    (
+        df["lc_ClassificationCount"],
+        df["lc_ClassificationBitBinary"],
+        df["lc_ClassificationBitDecimal"],
+    ) = get_classification_data(
+        df[north],
+        df[south],
+        df[east],
+        df[west],
+    )
+
+
+def completion_scores(df):
+    """
+    Adds the following completness score flags:
+    - `lc_SubCompletenessScore`: The percentage of valid landcover classifications and photos that are filled out.
+    - `lc_CumulativeCompletenessScore`: The percentage of non null values out of all the columns.
+
+    This modifies the DataFrame itself.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        A landcover DataFrame with the [`lc_PhotoBitBinary`](#photo_bit_flags) and [`lc_ClassificationBitBinary`](#classification_bit_flags) flags.
+    """
+
+    def sum_bit_mask(bit_mask="0"):
+        sum = 0.0
+        for char in bit_mask:
+            sum += int(char)
+        return sum
+
+    scores = {}
+    scores["sub_score"] = []
+    # Cummulative Completion Score
+    scores["cumulative_score"] = round(df.count(1) / len(df.columns), 2)
+    # Sub-Score
+    for index in range(len(df)):
+        bit_mask = (
+            df["lc_PhotoBitBinary"][index] + df["lc_ClassificationBitBinary"][index]
+        )
+        sub_score = round(sum_bit_mask(bit_mask=bit_mask), 2)
+        sub_score /= len(bit_mask)
+        scores["sub_score"].append(sub_score)
+
+    df["lc_SubCompletenessScore"], df["lc_CumulativeCompletenessScore"] = (
+        scores["sub_score"],
+        scores["cumulative_score"],
+    )
+
+
+def apply_cleanup(lc_df):
+    """Applies a full cleanup procedure to the landcover data.
+    It follows the following steps:
+    - Removes Homogenous Columns
+    - Renames Latitude and Longitudes
+    - Cleans the Column Naming
+    - Unpacks landcover classifications
+    - Rounds Columns
+    - Standardizes Null Values
+
+    Parameters
+    ----------
+    lc_df : pd.DataFrame
+        A DataFrame containing **raw** Landcover Data from the API.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the cleaned Landcover Data
+    """
+    lc_df = lc_df.copy()
+    remove_homogenous_cols(lc_df)
+    rename_latlon_cols(lc_df)
+    cleanup_column_prefix(lc_df)
+    lc_df = unpack_classifications(lc_df)
+    round_cols(lc_df)
+    standardize_null_vals(lc_df)
+    return lc_df
+
+
+def add_flags(lc_df):
+    """Adds the following flags to the landcover data:
+    - Photo Bit Flags
+    - Classification Bit Flags
+    - Completeness Score Flags
+
+    This modifies the DataFrame itself.
+
+    Parameters
+    ----------
+    lc_df : pd.DataFrame
+        A DataFrame containing cleaned up Landcover Data ideally from the [apply_cleanup](#apply_cleanup) method.
+    """
+
+    photo_bit_flags(
+        lc_df,
+        "lc_UpwardPhotoUrl",
+        "lc_DownwardPhotoUrl",
+        "lc_NorthPhotoUrl",
+        "lc_SouthPhotoUrl",
+        "lc_EastPhotoUrl",
+        "lc_WestPhotoUrl",
+    )
+    classification_bit_flags(
+        lc_df,
+        "lc_NorthPhotoUrl",
+        "lc_SouthPhotoUrl",
+        "lc_EastPhotoUrl",
+        "lc_WestPhotoUrl",
+    )
+    completion_scores(lc_df)
