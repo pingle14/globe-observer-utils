@@ -5,6 +5,8 @@ import pytest  # noqa: F401
 from go_utils.mhm import larvae_to_num
 
 
+@pytest.mark.mosquito
+@pytest.mark.cleanup
 def test_larvae_to_num():
     df = pd.DataFrame.from_dict(
         {

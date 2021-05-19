@@ -26,7 +26,7 @@ jobs:
       run: |
         pip install -e .
         pip install pytest
-        pytest go_utils
+        pytest -vv go_utils
   format:
     name: Format
     runs-on: ubuntu-latest

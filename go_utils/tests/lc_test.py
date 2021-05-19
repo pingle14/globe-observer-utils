@@ -16,6 +16,8 @@ camel_case_data = [
 ]
 
 
+@pytest.mark.landcover
+@pytest.mark.util
 @pytest.mark.parametrize("input, delims, expected", camel_case_data)
 def test_camel_case(input, delims, expected):
     assert camel_case(input, delims) == expected
@@ -24,6 +26,8 @@ def test_camel_case(input, delims, expected):
 test_classification = "60% MUC 02 (b) [Trees, Closely Spaced, Deciduous - Broad Leaved]"
 
 
+@pytest.mark.landcover
+@pytest.mark.util
 @pytest.mark.parametrize(
     "func, expected",
     [
@@ -41,6 +45,8 @@ def test_classification_extraction(func, expected):
 sample_data = "60% MUC 02 (b) [Category one]; 50% MUC 05 (b) [Category two]"
 
 
+@pytest.mark.landcover
+@pytest.mark.cleanup
 def test_landcover_unpack():
     classifications = [
         "lc_WestClassifications",
