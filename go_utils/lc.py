@@ -1,6 +1,9 @@
+import math
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import re
+import seaborn as sns
 
 from go_utils.cleanup import (
     replace_column_prefix,
@@ -9,6 +12,7 @@ from go_utils.cleanup import (
     standardize_null_vals,
     round_cols,
 )
+from go_utils.plot import completeness_histogram, plot_freq_bar, multiple_bar_graph
 
 
 __doc__ = """
@@ -481,3 +485,95 @@ def add_flags(lc_df):
         "lc_WestPhotoUrl",
     )
     completion_scores(lc_df)
+
+
+def direction_frequency(lc_df, direction_list, bit_binary, entry_type):
+    """
+    Plots the amount of a variable of interest for each direction.
+
+    Parameters
+    ----------
+    lc_df : pd.DataFrame
+        The DataFrame containing Land Cover Data.
+    direction_list : list of str
+        The column names of the different variables of interest for each direction.
+    bit_binary: str
+        The Bit Binary Flag associated with the variable of interest.
+    entry_type: str
+        The variable of interest (e.g. Photos or Classifications)
+    """
+    direction_photos = pd.DataFrame()
+    direction_photos["category"] = direction_list
+    direction_counts = [0 for i in range(len(direction_photos))]
+    for mask in lc_df[bit_binary]:
+        for i in range(len(mask) - 1, -1, -1):
+            direction_counts[i] += int(mask[i])
+    direction_counts
+    direction_photos["count"] = [math.log10(value) for value in direction_counts]
+    direction_photos
+
+    plt.figure(figsize=(15, 6))
+    title = f"Land Cover -- {entry_type} Direction Frequency (Log Scale)"
+    plt.title(title)
+    plt.ylabel("Count (Log Scale)")
+    sns.barplot(data=direction_photos, x="category", y="count", color="lightblue")
+
+
+def diagnostic_plots(lc_df):
+    """
+    Generates (but doesn't display) diagnostic plots to gain insight into the current data.
+
+    Plots:
+    - Valid Photo Count Distribution
+    - Photo Distribution by direction
+    - Classification Distribution by direction
+    - Photo Status Distribution
+    - Completeness Score Distribution
+    - Subcompleteness Score Distribution
+
+    Parameters
+    ----------
+    lc_df : pd.DataFrame
+        The DataFrame containing Flagged and Cleaned Land Cover Data.
+    """
+    plot_freq_bar(
+        lc_df, "Land Cover", "lc_PhotoCount", "Valid Photo Count", log_scale=True
+    )
+    direction_frequency(
+        lc_df,
+        [
+            "lc_UpwardPhotoUrl",
+            "lc_DownwardPhotoUrl",
+            "lc_NorthPhotoUrl",
+            "lc_SouthPhotoUrl",
+            "lc_EastPhotoUrl",
+            "lc_WestPhotoUrl",
+        ],
+        "lc_PhotoBitBinary",
+        "Photo",
+    )
+    direction_frequency(
+        lc_df,
+        [
+            "lc_NorthClassifications",
+            "lc_SouthClassifications",
+            "lc_EastClassifications",
+            "lc_WestClassifications",
+        ],
+        "lc_ClassificationBitBinary",
+        "Classification",
+    )
+    multiple_bar_graph(
+        lc_df,
+        "Land Cover",
+        ["lc_PhotoCount", "lc_RejectedCount", "lc_EmptyCount"],
+        "Photo Summary",
+        log_scale=True,
+    )
+
+    completeness_histogram(
+        lc_df, "Land Cover", "lc_CumulativeCompletenessScore", "Cumulative Completeness"
+    )
+    completeness_histogram(
+        lc_df, "Land Cover", "lc_SubCompletenessScore", "Sub Completeness"
+    )

@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import re
@@ -9,6 +10,11 @@ from go_utils.cleanup import (
     rename_latlon_cols,
     round_cols,
     standardize_null_vals,
+)
+
+from go_utils.plot import (
+    plot_int_distribution,
+    completeness_histogram,
 )
 
 
@@ -89,6 +95,7 @@ def larvae_to_num(mhm_df, larvae_count_col="mhm_LarvaeCount"):
     for i in range(len(mhm_df[larvae_count_col])):
         if (
             not pd.isna(mhm_df[larvae_count_col][i])
+            and type(mhm_df[larvae_count_col][i]) is str
             and "e+" in mhm_df[larvae_count_col][i]
         ):
             mhm_df.at[i, larvae_count_col] = "100000"
@@ -311,13 +318,20 @@ def apply_cleanup(mhm_df):
     ----------
     mhm_df : pd.DataFrame
         A DataFrame containing **raw** Mosquito Habitat Mapper Data from the API.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the cleaned up Mosquito Habitat Mapper Data
     """
+    mhm_df = mhm_df.copy()
     remove_homogenous_cols(mhm_df)
     rename_latlon_cols(mhm_df)
     cleanup_column_prefix(mhm_df)
     larvae_to_num(mhm_df)
     round_cols(mhm_df)
     standardize_null_vals(mhm_df)
+    return mhm_df
 
 
 def add_flags(mhm_df):
@@ -346,3 +360,80 @@ def add_flags(mhm_df):
         "mhm_AbdomenCloseupPhotoUrls",
     )
     completion_score_flag(mhm_df)
+
+
+def plot_photo_entries(df):
+    """
+    Plots the number of entries with photos and the number of entries without photos
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing Mosquito Habitat Mapper Data with the PhotoBitDecimal Flag.
+    """
+    plt.figure()
+    num_valid = len(df[df["mhm_PhotoBitDecimal"] > 0])
+    plt.title("Entries with Photos vs No Photos")
+    plt.ylabel("Number of Entries")
+    plt.bar("Valid Photos", num_valid, color="#e34a33")
+    plt.bar("No Photos", len(df) - num_valid, color="#fdcc8a")
+
+
+def photo_subjects(mhm_df):
+    """
+    Plots the amount of photos for each photo area (Larvae, Abdomen, Watersource)
+
+    Parameters
+    ----------
+    mhm_df : pd.DataFrame
+        The DataFrame containing Mosquito Habitat Mapper Data with the PhotoBitDecimal Flag.
+    """
+
+    total_dict = {"Larvae Photos": 0, "Abdomen Photos": 0, "Watersource Photos": 0}
+
+    for number in mhm_df["mhm_PhotoBitDecimal"]:
+        total_dict["Watersource Photos"] += number & 4
+        total_dict["Larvae Photos"] += number & 2
+        total_dict["Abdomen Photos"] += number & 1
+
+    for key in total_dict.keys():
+        total_dict[key] = math.log10(total_dict[key])
+
+    plt.figure(figsize=(10, 5))
+    plt.title("Mosquito Habitat Mapper - Photo Subject Frequencies (Log Scale)")
+    plt.xlabel("Photo Type")
+    plt.ylabel("Frequency (Log Scale)")
+    plt.bar(total_dict.keys(), total_dict.values(), color="lightblue")
+
+
+def diagnostic_plots(mhm_df):
+    """
+    Generates (but doesn't display) diagnostic plots to gain insight into the current data.
+
+    Plots:
+    - Larvae Count Distribution (where a negative entry denotes null data)
+    - Photo Subject Distribution
+    - Number of valid photos vs no photos
+    - Completeness Score Distribution
+    - Subcompleteness Score Distribution
+
+    Parameters
+    ----------
+    mhm_df : pd.DataFrame
+        The DataFrame containing Flagged and Cleaned Mosquito Habitat Mapper Data.
+    """
+    plot_int_distribution(mhm_df, "mhm_LarvaeCount", "Larvae Count")
+    photo_subjects(mhm_df)
+    plot_photo_entries(mhm_df)
+    completeness_histogram(
+        mhm_df,
+        "Mosquito Habitat Mapper",
+        "mhm_CumulativeCompletenessScore",
+        "Cumulative Completeness",
+    )
+    completeness_histogram(
+        mhm_df,
+        "Mosquito Habitat Mapper",
+        "mhm_SubCompletenessScore",
+        "Sub Completeness",
+    )

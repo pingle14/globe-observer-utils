@@ -74,6 +74,7 @@ setup(
         "pandas>=1.1.5",
         "requests>=2.23.0",
         "arcgis>=1.8.4",
+        "seaborn>=0.11.1",
     ],
     python_requires=">=3.6",
     license="MIT License",
