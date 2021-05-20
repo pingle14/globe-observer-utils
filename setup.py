@@ -69,7 +69,13 @@ setup(
     zip_safe=True,
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
-    install_requires=["numpy>=1.19.0", "pandas>=1.1.5", "requests>=2.23.0"],
+    install_requires=[
+        "numpy>=1.19.0",
+        "pandas>=1.1.5",
+        "requests>=2.23.0",
+        "arcgis>=1.8.4",
+        "seaborn>=0.11.1",
+    ],
     python_requires=">=3.6",
     license="MIT License",
     classifiers=[
