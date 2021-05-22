@@ -10,6 +10,9 @@ from go_utils.lc import (
     photo_bit_flags,
     classification_bit_flags,
     completion_scores,
+    qa_filter,
+    apply_cleanup,
+    add_flags,
 )
 
 
@@ -167,3 +170,23 @@ def test_completion_scores():
 
     assert np.all(df["lc_SubCompletenessScore"] == [0.5, 0.5, 0.4, 0.2])
     assert np.all(df["lc_CumulativeCompletenessScore"] == [0.80, 0.75, 0.95, 0.80])
+
+
+@pytest.mark.landcover
+@pytest.mark.util
+def test_qa_filter():
+    lc_df = pd.read_csv("go_utils/tests/sample_data/lc.csv")
+    lc_df = apply_cleanup(lc_df)
+    add_flags(lc_df)
+
+    # Make sure default changes nothing
+    assert len(lc_df) == len(qa_filter(lc_df))
+
+    single_classification_filtered = qa_filter(lc_df, has_classification=True)
+    assert np.all(single_classification_filtered["lc_ClassificationBitDecimal"] > 0)
+    single_photo_filtered = qa_filter(lc_df, has_photo=True)
+    assert np.all(single_photo_filtered["lc_PhotoBitDecimal"] > 0)
+    all_classifications_filtered = qa_filter(lc_df, has_all_classifications=True)
+    assert np.all(all_classifications_filtered["lc_ClassificationBitDecimal"] == 15)
+    all_photos_filtered = qa_filter(lc_df, has_all_photos=True)
+    assert np.all(all_photos_filtered["lc_PhotoBitDecimal"] == 63)

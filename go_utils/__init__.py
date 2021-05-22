@@ -13,4 +13,5 @@ Here are the major utilities provided by the package:
 
 - Easy downloading of the GLOBE Observer datasets as Pandas DataFrames
 - Utilities for cleaning up Mosquito Habitat Mapper and Landcover Datasets
+- CLI Scripts for downloading data and photos for the Mosquito Habitat Mapper and Landcover Protocols.
 """

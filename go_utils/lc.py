@@ -577,3 +577,22 @@ def diagnostic_plots(lc_df):
     completeness_histogram(
         lc_df, "Land Cover", "lc_SubCompletenessScore", "Sub Completeness"
     )
+
+
+def qa_filter(
+    lc_df,
+    has_classification=False,
+    has_photo=False,
+    has_all_photos=False,
+    has_all_classifications=False,
+):
+    if has_classification and not has_all_classifications:
+        lc_df = lc_df[lc_df["lc_ClassificationBitDecimal"] > 0]
+    elif has_all_classifications:
+        lc_df = lc_df[lc_df["lc_ClassificationBitDecimal"] == 15]
+    if has_photo and not has_all_photos:
+        lc_df = lc_df[lc_df["lc_PhotoBitDecimal"] > 0]
+    elif has_all_photos:
+        lc_df = lc_df[lc_df["lc_PhotoBitDecimal"] == 63]
+
+    return lc_df

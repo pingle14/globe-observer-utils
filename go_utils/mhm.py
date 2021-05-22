@@ -12,10 +12,7 @@ from go_utils.cleanup import (
     standardize_null_vals,
 )
 
-from go_utils.plot import (
-    plot_int_distribution,
-    completeness_histogram,
-)
+from go_utils.plot import plot_int_distribution, completeness_histogram, plot_freq_bar
 
 
 __doc__ = r"""
@@ -362,7 +359,7 @@ def add_flags(mhm_df):
     completion_score_flag(mhm_df)
 
 
-def plot_photo_entries(df):
+def plot_valid_entries(df, bit_col, entry_type):
     """
     Plots the number of entries with photos and the number of entries without photos
 
@@ -372,11 +369,11 @@ def plot_photo_entries(df):
         The DataFrame containing Mosquito Habitat Mapper Data with the PhotoBitDecimal Flag.
     """
     plt.figure()
-    num_valid = len(df[df["mhm_PhotoBitDecimal"] > 0])
-    plt.title("Entries with Photos vs No Photos")
+    num_valid = len(df[df[bit_col] > 0])
+    plt.title(f"Entries with {entry_type} vs No {entry_type}")
     plt.ylabel("Number of Entries")
-    plt.bar("Valid Photos", num_valid, color="#e34a33")
-    plt.bar("No Photos", len(df) - num_valid, color="#fdcc8a")
+    plt.bar(entry_type, num_valid, color="#e34a33")
+    plt.bar(f"No {entry_type}", len(df) - num_valid, color="#fdcc8a")
 
 
 def photo_subjects(mhm_df):
@@ -397,8 +394,10 @@ def photo_subjects(mhm_df):
         total_dict["Abdomen Photos"] += number & 1
 
     for key in total_dict.keys():
-        total_dict[key] = math.log10(total_dict[key])
-
+        if total_dict[key] != 0:
+            total_dict[key] = math.log10(total_dict[key])
+        else:
+            total_dict[key] = 0
     plt.figure(figsize=(10, 5))
     plt.title("Mosquito Habitat Mapper - Photo Subject Frequencies (Log Scale)")
     plt.xlabel("Photo Type")
@@ -424,7 +423,9 @@ def diagnostic_plots(mhm_df):
     """
     plot_int_distribution(mhm_df, "mhm_LarvaeCount", "Larvae Count")
     photo_subjects(mhm_df)
-    plot_photo_entries(mhm_df)
+    plot_freq_bar(mhm_df, "Mosquito Habitat Mapper", "mhm_Genus", "Genus Types")
+    plot_valid_entries(mhm_df, "mhm_HasGenus", "Genus Classifications")
+    plot_valid_entries(mhm_df, "mhm_PhotoBitDecimal", "Valid Photos")
     completeness_histogram(
         mhm_df,
         "Mosquito Habitat Mapper",
@@ -437,3 +438,22 @@ def diagnostic_plots(mhm_df):
         "mhm_SubCompletenessScore",
         "Sub Completeness",
     )
+
+
+def qa_filter(
+    mhm_df,
+    has_genus=False,
+    min_larvae_count=-9999,
+    has_photos=False,
+    is_container=False,
+):
+    mhm_df = mhm_df[mhm_df["mhm_LarvaeCount"] >= min_larvae_count]
+
+    if has_genus:
+        mhm_df = mhm_df[mhm_df["mhm_HasGenus"] == 1]
+    if has_photos:
+        mhm_df = mhm_df[mhm_df["mhm_PhotoBitDecimal"] > 0]
+    if is_container:
+        mhm_df = mhm_df[mhm_df["mhm_IsWaterSourceContainer"] == 1]
+
+    return mhm_df

@@ -172,7 +172,7 @@ def completeness_histogram(df, protocol, completeness_col, completeness_type):
       The type of completeness score (Sub or Cumulative)
     """
     plt.figure(figsize=(10, 4))
-    title = f"{protocol} -- Completeness Scores Frequency Histogram"
+    title = f"{protocol} -- {completeness_type} Completeness Scores Frequency Histogram"
     plt.title(title)
     plt.hist(df[completeness_col], color="pink", label=completeness_type)
     plt.xlabel("Scores")

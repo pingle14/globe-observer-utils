@@ -131,3 +131,6 @@ dmypy.json
 
 # Ignore docs directories
 globe-observer-utils-docs/
+
+# Ignore Photo Directory
+test_photos/

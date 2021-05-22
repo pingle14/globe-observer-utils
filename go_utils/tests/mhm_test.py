@@ -9,6 +9,9 @@ from go_utils.mhm import (
     infectious_genus_flag,
     photo_bit_flags,
     completion_score_flag,
+    qa_filter,
+    apply_cleanup,
+    add_flags,
 )
 
 
@@ -173,3 +176,26 @@ def test_completeness():
     assert np.all(
         df["mhm_CumulativeCompletenessScore"] == [0.82, 0.91, 0.82, 1.00, 0.82]
     )
+
+
+@pytest.mark.mosquito
+@pytest.mark.util
+def test_qa_filter():
+    mhm_df = pd.read_csv("go_utils/tests/sample_data/mhm.csv")
+    mhm_df = apply_cleanup(mhm_df)
+    add_flags(mhm_df)
+
+    # Make sure default changes nothing
+    assert len(mhm_df) == len(qa_filter(mhm_df))
+
+    genus_filtered = qa_filter(mhm_df, has_genus=True)
+    assert np.all(genus_filtered["mhm_HasGenus"] == 1)
+
+    larvae_filtered = qa_filter(mhm_df, min_larvae_count=1)
+    assert np.all(larvae_filtered["mhm_LarvaeCount"] >= 1)
+
+    photo_filtered = qa_filter(mhm_df, has_photos=True)
+    assert np.all(photo_filtered["mhm_PhotoBitDecimal"] > 0)
+
+    container_filtered = qa_filter(mhm_df, is_container=True)
+    assert np.all(container_filtered["mhm_IsWaterSourceContainer"] == 1)
