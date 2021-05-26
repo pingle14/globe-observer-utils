@@ -67,9 +67,12 @@ def remove_homogenous_cols(df):
     """
 
     for column in df.columns:
-        if len(pd.unique(df[column])) == 1:
-            logging.info(f"Dropped: {df[column][0]}")
-            df.drop(column, axis=1, inplace=True)
+        try:
+            if len(pd.unique(df[column])) == 1:
+                logging.info(f"Dropped: {df[column][0]}")
+                df.drop(column, axis=1, inplace=True)
+        except TypeError:
+            continue
 
 
 def replace_column_prefix(df, protocol, replacement_text):
