@@ -13,12 +13,11 @@ def parse_api_data(response_json):
     try:
         results = response_json["results"]
         df = pd.DataFrame(results)
-
-        # Expand the 'data' column by listing the contents and passing as a new dataframe
-        df = pd.concat([df, pd.DataFrame(list(df["data"]))], axis=1)
     except KeyError:
         raise RuntimeError("Data Download Failed. The GLOBE API is most likely down.")
 
+    # Expand the 'data' column by listing the contents and passing as a new dataframe
+    df = pd.concat([df, pd.DataFrame(list(df["data"]))], axis=1)
     # Drop the previously nested data column
     df = df.drop("data", 1)
 
@@ -84,14 +83,27 @@ def get_api_data(
             "Failed to get data from the API. Double check your specified settings to make sure they are valid."
         )
 
-    return parse_api_data(response.json())
+    # Convert measured date data into datetime
+    df = parse_api_data(response.json())
+    measured_at = protocol.replace("_", "") + "MeasuredAt"
+    vectorized_convert_to_datetime = np.vectorize(_convert_to_datetime)
+    if type(df.loc[0, "measuredDate"]) is str:
+        df["measuredDate"] = vectorized_convert_to_datetime(
+            df["measuredDate"].to_numpy()
+        )
+    if type(df.loc[0, measured_at]) is str:
+        df[measured_at] = vectorized_convert_to_datetime(df[measured_at].to_numpy())
+    return df
 
 
 def _convert_to_datetime(date):
     try:
         return datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
     except (ValueError, TypeError):
-        pass
+        try:
+            return datetime.strptime(date, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            pass
     return np.nan
 
 
