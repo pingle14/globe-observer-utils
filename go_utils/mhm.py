@@ -150,30 +150,10 @@ def is_container_flag(df, watersource_col):
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
     watersource_col : str
-        The column name in the mosquito habitat mapper DataFrame that contains the watersource records.
+        The column name in the mosquito habitat mapper DataFrame that contains the watersource type records.
     """
 
-    def is_container(entry):
-        non_container_keywords = [
-            "puddle",
-            "still water",
-            "stream",
-            "estuary",
-            "lake",
-            "pond",
-            "ditch",
-            "bay",
-            "ocean",
-            "swamp",
-            "wetland",
-        ]
-        lowercase = entry.lower()
-        for item in non_container_keywords:
-            if item in lowercase:
-                return False
-        return True
-
-    mark_containers = np.vectorize(is_container)
+    mark_containers = np.vectorize(lambda container: "container" in container)
     df["mhm_IsWaterSourceContainer"] = mark_containers(
         df[watersource_col].to_numpy()
     ).astype(int)
@@ -348,7 +328,7 @@ def add_flags(mhm_df):
 
     has_genus_flag(mhm_df, "mhm_Genus")
     infectious_genus_flag(mhm_df, "mhm_Genus")
-    is_container_flag(mhm_df, "mhm_WaterSource")
+    is_container_flag(mhm_df, "mhm_WaterSourceType")
     has_watersource_flag(mhm_df, "mhm_WaterSource")
     photo_bit_flags(
         mhm_df,

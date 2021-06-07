@@ -92,14 +92,14 @@ def test_is_container():
     df = pd.DataFrame.from_dict(
         {
             "watersource": [
-                "container",
-                "pot",
-                "lake",
-                "swamp",
-                "tire",
-                "ovitrap",
-                "pond or estuary",
-                "test or ocean",
+                "container: artificial",
+                "container: artificial",
+                "still: lake/pond/swamp",
+                "still: lake/pond/swamp",
+                "container: artificial",
+                "container: artificial",
+                "still: lake/pond/swamp",
+                "still: lake/pond/swamp",
             ]
         }
     )
