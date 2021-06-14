@@ -62,14 +62,14 @@ def _format_param_name(name):
 def get_mhm_download_targets(
     mhm_df,
     directory,
-    watersource_col,
-    date_col,
-    id_col,
-    genus_col,
-    species_col="",
-    larvae_photo="",
-    watersource_photo="",
-    abdomen_photo="",
+    watersource_col="mhm_WaterSource",
+    date_col="mhm_measuredDate",
+    id_col="mhm_MosquitoHabitatMapperId",
+    genus_col="mhm_Genus",
+    species_col="mhm_Species",
+    larvae_photo="mhm_LarvaFullBodyPhotoUrls",
+    watersource_photo="mhm_WaterSourcePhotoUrls",
+    abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
 ):
     """
     Generates mosquito habitat mapper targets to download
@@ -80,21 +80,21 @@ def get_mhm_download_targets(
         Mosquito Habitat Mapper Data
     directory : str
         The directory to save the photos
-    watersource_col : str
+    watersource_col : str, default = "mhm_WaterSource"
         The column name of the column that contains the watersource
-    date_col : str
+    date_col : str, default = "mhm_measuredDate"
         The column name of the column that contains the measured date
-    id_col : str
+    id_col : str, default = "mhm_MosquitoHabitatMapperId"
         The column name of the column that contains the mosquito habitat mapper id
-    genus_col : str
+    genus_col : str, default = "mhm_Genus"
         The column name of the column that contains the genus
-    species_col : str
+    species_col : str, default = "mhm_Species"
         The column name of the column that contains the species
-    larvae_photo : str, default = ""
+    larvae_photo : str, default = "mhm_LarvaFullBodyPhotoUrls"
         The column name of the column that contains the larvae photo urls. If not specified, the larvae photos will not be included.
-    watersource_photo : str, default = "
+    watersource_photo : str, default = "mhm_WaterSourcePhotoUrls"
         The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
-    abdomen_photo : str, default = "
+    abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
 
     Returns
@@ -145,14 +145,14 @@ def get_mhm_download_targets(
 def download_mhm_photos(
     mhm_df,
     directory,
-    watersource_col,
-    date_col,
-    id_col,
-    genus_col,
-    species_col="",
-    larvae_photo="",
-    watersource_photo="",
-    abdomen_photo="",
+    watersource_col="mhm_WaterSource",
+    date_col="mhm_measuredDate",
+    id_col="mhm_MosquitoHabitatMapperId",
+    genus_col="mhm_Genus",
+    species_col="mhm_Species",
+    larvae_photo="mhm_LarvaFullBodyPhotoUrls",
+    watersource_photo="mhm_WaterSourcePhotoUrls",
+    abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
 ):
     """
     Downloads mosquito habitat mapper photos
@@ -163,22 +163,22 @@ def download_mhm_photos(
         Mosquito Habitat Mapper Data
     directory : str
         The directory to save the photos
-    watersource_col : str
+    watersource_col : str, default = "mhm_WaterSource"
         The column name of the column that contains the watersource
-    date_col : str
+    date_col : str, default = "mhm_measuredDate"
         The column name of the column that contains the measured date
-    id_col : str
+    id_col : str, default = "mhm_MosquitoHabitatMapperId"
         The column name of the column that contains the mosquito habitat mapper id
-    genus_col : str
+    genus_col : str, default = "mhm_Genus"
         The column name of the column that contains the genus
-    species_col : str
+    species_col : str, default = "mhm_Species"
         The column name of the column that contains the species
-    larvae_photo : str, default = ""
-        The column name of the column that contains the larvae photo urls. If not specified, these photos will not be included.
-    watersource_photo : str, default = "
-        The column name of the column that contains the watersource photo urls. If not specified, these photos will not be included.
-    abdomen_photo : str, default = "
-        The column name of the column that contains the abdomen photo urls. If not specified, these photos will not be included.
+    larvae_photo : str, default = "mhm_LarvaFullBodyPhotoUrls"
+        The column name of the column that contains the larvae photo urls. If not specified, the larvae photos will not be included.
+    watersource_photo : str, default = "mhm_WaterSourcePhotoUrls"
+        The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
+    abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
+        The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
 
     Returns
     -------
@@ -195,14 +195,14 @@ def download_mhm_photos(
 def get_lc_download_targets(
     lc_df,
     directory,
-    date_col,
-    id_col,
-    up_photo="",
-    down_photo="",
-    north_photo="",
-    south_photo="",
-    east_photo="",
-    west_photo="",
+    date_col="lc_measuredDate",
+    id_col="lc_LandCoverId",
+    up_photo="lc_UpwardPhotoUrl",
+    down_photo="lc_DownwardPhotoUrl",
+    north_photo="lc_NorthPhotoUrl",
+    south_photo="lc_SouthPhotoUrl",
+    east_photo="lc_EastPhotoUrl",
+    west_photo="lc_WestPhotoUrl",
 ):
     """
     Generates landcover targets to download
@@ -213,21 +213,21 @@ def get_lc_download_targets(
         Cleaned and Flagged Landcover Data
     directory : str
         The directory to save the photos
-    date_col : str
+    date_col : str, default="lc_measuredDate"
         The column name of the column that contains the measured date
-    id_col : str
+    id_col : str, default="lc_LandCoverId"
         The column name of the column that contains the landcover id
-    up_photo : str, default = ""
+    up_photo : str, default = "lc_UpwardPhotoUrl"
         The column name of the column that contains the upward photo urls. If not specified, these photos will not be included.
-    down_photo : str, default = ""
+    down_photo : str, default = "lc_DownwardPhotoUrl"
         The column name of the column that contains the downward photo urls. If not specified, these photos will not be included.
-    north_photo : str, default = ""
+    north_photo : str, default = "lc_NorthPhotoUrl"
         The column name of the column that contains the north photo urls. If not specified, these photos will not be included.
-    south_photo : str, default = ""
+    south_photo : str, default = "lc_SouthPhotoUrl"
         The column name of the column that contains the south photo urls. If not specified, these photos will not be included.
-    east_photo : str, default = ""
+    east_photo : str, default = "lc_EastPhotoUrl"
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
-    west_photo : str, default = ""
+    west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
 
     Returns
@@ -265,14 +265,14 @@ def get_lc_download_targets(
 def download_lc_photos(
     lc_df,
     directory,
-    date_col,
-    id_col,
-    up_photo="",
-    down_photo="",
-    north_photo="",
-    south_photo="",
-    east_photo="",
-    west_photo="",
+    date_col="lc_measuredDate",
+    id_col="lc_LandCoverId",
+    up_photo="lc_UpwardPhotoUrl",
+    down_photo="lc_DownwardPhotoUrl",
+    north_photo="lc_NorthPhotoUrl",
+    south_photo="lc_SouthPhotoUrl",
+    east_photo="lc_EastPhotoUrl",
+    west_photo="lc_WestPhotoUrl",
 ):
     """
     Downloads Landcover photos for landcover data.
@@ -283,21 +283,21 @@ def download_lc_photos(
         Cleaned and Flagged Landcover Data
     directory : str
         The directory to save the photos
-    date_col : str
+    date_col : str, default="lc_measuredDate"
         The column name of the column that contains the measured date
-    id_col : str
+    id_col : str, default="lc_LandCoverId"
         The column name of the column that contains the landcover id
-    up_photo : str, default = ""
+    up_photo : str, default = "lc_UpwardPhotoUrl"
         The column name of the column that contains the upward photo urls. If not specified, these photos will not be included.
-    down_photo : str, default = ""
+    down_photo : str, default = "lc_DownwardPhotoUrl"
         The column name of the column that contains the downward photo urls. If not specified, these photos will not be included.
-    north_photo : str, default = ""
+    north_photo : str, default = "lc_NorthPhotoUrl"
         The column name of the column that contains the north photo urls. If not specified, these photos will not be included.
-    south_photo : str, default = ""
+    south_photo : str, default = "lc_SouthPhotoUrl"
         The column name of the column that contains the south photo urls. If not specified, these photos will not be included.
-    east_photo : str, default = ""
+    east_photo : str, default = "lc_EastPhotoUrl"
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
-    west_photo : str, default = ""
+    west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
 
     Returns
@@ -311,111 +311,3 @@ def download_lc_photos(
     targets = get_lc_download_targets(**locals())
     download_all_photos(targets)
     return targets
-
-
-def download_cleaned_mhm_photos(
-    mhm_df,
-    directory,
-    species=True,
-    larvae_photo=True,
-    watersource_photo=True,
-    abdomen_photo=True,
-):
-    """
-    Downloads mosquito habitat mapper photos for cleaned and flagged data.
-
-    Parameters
-    ----------
-    mhm_df : pd.DataFrame
-        Cleaned and Flagged Mosquito Habitat Mapper Data
-    directory : str
-        The directory to save the photos
-    species : bool, default=True
-        If the downloaded photo names should include the species
-    larvae_photo : bool, default=True
-        If larvae photos should be downloaded.
-    watersource_photo : bool, default=True
-        If watersource photos should be downloaded.
-    abdomen_photo : bool, default=True
-        If abdomen photos should be downloaded.
-
-    Returns
-    -------
-    set of tuple of str
-        Contains the (url, directory, and filename) for each desired mosquito habitat mapper photo
-    """
-    download_args = {}
-    download_args["mhm_df"] = mhm_df
-    download_args["directory"] = directory
-    download_args["watersource_col"] = "mhm_WaterSource"
-    download_args["date_col"] = "mhm_measuredDate"
-    download_args["id_col"] = "mhm_MosquitoHabitatMapperId"
-    download_args["genus_col"] = "mhm_Genus"
-    if species:
-        download_args["species_col"] = "mhm_Species"
-    if larvae_photo:
-        download_args["larvae_photo"] = "mhm_LarvaFullBodyPhotoUrls"
-    if watersource_photo:
-        download_args["watersource_photo"] = "mhm_WaterSourcePhotoUrls"
-    if abdomen_photo:
-        download_args["abdomen_photo"] = "mhm_AbdomenCloseupPhotoUrls"
-
-    return download_mhm_photos(**download_args)
-
-
-def download_cleaned_lc_photos(
-    lc_df,
-    directory,
-    up_photo=True,
-    down_photo=True,
-    north_photo=True,
-    south_photo=True,
-    east_photo=True,
-    west_photo=True,
-):
-    """
-    Downloads Landcover photos for cleaned and flagged data.
-
-    Parameters
-    ----------
-    lc_df : pd.DataFrame
-        Cleaned and Flagged Landcover Data
-    directory : str
-        The directory to save the photos
-    up_photo : bool, default=True
-        If upward photos should be downloaded.
-    down_photo : bool, default=True
-        If downward photos should be downloaded.
-    north_photo : bool, default=True
-        If north photos should be downloaded.
-    south_photo : bool, default=True
-        If south photos should be downloaded.
-    east_photo : bool, default=True
-        If east photos should be downloaded.
-    west_photo : bool, default=True
-        If west photos should be downloaded.
-
-    Returns
-    -------
-    set of tuple of str
-        Contains the (url, directory, and filename) for each desired land cover photo
-    """
-    download_args = {}
-    download_args["lc_df"] = lc_df
-    download_args["directory"] = directory
-    download_args["date_col"] = "lc_measuredDate"
-    download_args["id_col"] = "lc_LandCoverId"
-    if up_photo:
-        download_args["up_photo"] = "lc_UpwardPhotoUrl"
-    if down_photo:
-        download_args["down_photo"] = "lc_DownwardPhotoUrl"
-    if north_photo:
-        download_args["north_photo"] = "lc_UpwardPhotoUrl"
-    if south_photo:
-        download_args["south_photo"] = "lc_SouthPhotoUrl"
-    if east_photo:
-        download_args["east_photo"] = "lc_EastPhotoUrl"
-    if west_photo:
-        download_args["west_photo"] = "lc_WestPhotoUrl"
-
-    return download_lc_photos(**download_args)

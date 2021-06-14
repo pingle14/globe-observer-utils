@@ -10,7 +10,7 @@ from go_utils import mhm, lc
 def test_diagnostic_plots(filename, module):
     df = pd.read_csv(f"go_utils/tests/sample_data/{filename}")
     df = module.apply_cleanup(df)
-    module.add_flags(df)
+    df = module.add_flags(df)
     module.diagnostic_plots(df)
     for num in plt.get_fignums():
         fig = plt.figure(num)

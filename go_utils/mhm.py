@@ -6,10 +6,10 @@ import re
 
 from go_utils.cleanup import (
     replace_column_prefix,
-    remove_homogenous_cols,
     rename_latlon_cols,
     round_cols,
     standardize_null_vals,
+    remove_homogenous_cols,
 )
 
 from go_utils.plot import plot_int_distribution, completeness_histogram, plot_freq_bar
@@ -42,27 +42,45 @@ Additionally, there were extremely large values that Python was unable to proces
 """
 
 
-def cleanup_column_prefix(df):
+def cleanup_column_prefix(df, inplace=False):
     """Method for shortening raw mosquito habitat mapper column names.
-
-    Example usage:
-    ```python
-    from go_utils.mhm import cleanup_column_prefix
-
-    cleanup_column_prefix(df)
-    ```
-
-    The df object will now replace the verbose `mosquitohabitatmapper` prefix in some of the columns with `mhm_`
 
     Parameters
     ----------
     df : pd.DataFrame
-        The DataFrame containing raw mosquito habitat mapper data. The DataFrame object itself will be modified
+        The DataFrame containing raw mosquito habitat mapper data.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the cleaned up column prefixes. If `inplace=True` it returns None.
     """
-    replace_column_prefix(df, "mosquito_habitat_mapper", "mhm")
+
+    return replace_column_prefix(df, "mosquitohabitatmapper", "mhm", inplace=inplace)
 
 
-def larvae_to_num(mhm_df, larvae_count_col="mhm_LarvaeCount"):
+def _entry_to_num(entry):
+    try:
+        if entry == "more than 100":
+            return 101, 1, 1
+        if pd.isna(entry):
+            return -9999, 0, 0
+        elif float(entry) > 100:
+            return 101, min(math.floor(math.log10(float(entry) / 100)) + 1, 4), 0
+        return float(entry), 0, 0
+    except ValueError:
+        return float(re.sub(r"-.*", "", entry)), 0, 1
+
+
+def larvae_to_num(
+    mhm_df,
+    larvae_count_col="mhm_LarvaeCount",
+    magnitude="mhm_LarvaeCountMagnitude",
+    range_flag="mhm_LarvaeCountIsRangeFlag",
+    inplace=False,
+):
     """Converts the Larvae Count of the Mosquito Habitat Mapper Dataset from being stored as a string to integers.
 
     See [here](#converting-larvae-data-to-integers) for more information.
@@ -71,132 +89,216 @@ def larvae_to_num(mhm_df, larvae_count_col="mhm_LarvaeCount"):
     ----------
     mhm_df : pd.DataFrame
         A DataFrame of Mosquito Habitat Mapper data that needs the larvae counts to be set to numbers
-    larvae_count_col : str, default="mhm_LarvaeCount" (this is intended for DataFrames who have already cleaned their column names)
+    larvae_count_col : str, default="mhm_LarvaeCount"
         The name of the column storing the larvae count. **Note**: The columns will be output in the format: `prefix_ColumnName` where `prefix` is all the characters that preceed the words `LarvaeCount` in the specified name.
+    magnitude: str, default="mhm_LarvaeCountMagnitude"
+        The name of the column which will store the generated LarvaeCountMagnitude output
+    range_flag : str, default="mhm_LarvaeCountIsRangeFlag"
+        The name of the column which will store the generated LarvaeCountIsRange flag
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the larvae count as integers. If `inplace=True` it returns None.
     """
 
-    def entry_to_num(entry):
-        try:
-            if entry == "more than 100":
-                return 101, 1, 1
-            if pd.isna(entry):
-                return -9999, 0, 0
-            elif float(entry) > 100:
-                return 101, min(math.floor(math.log10(float(entry) / 100)) + 1, 4), 0
-            return float(entry), 0, 0
-        except ValueError:
-            return float(re.sub(r"-.*", "", entry)), 0, 1
-
-    prefix = larvae_count_col.lower().replace("larvaecount", "")
+    if not inplace:
+        mhm_df = mhm_df.copy()
     # Preprocessing step to remove extremely erroneous values
-    for i in range(len(mhm_df[larvae_count_col])):
-        if (
-            not pd.isna(mhm_df[larvae_count_col][i])
-            and type(mhm_df[larvae_count_col][i]) is str
-            and "e+" in mhm_df[larvae_count_col][i]
-        ):
+    for i in mhm_df.index:
+        count = mhm_df[larvae_count_col][i]
+        if not pd.isna(count) and type(count) is str and "e+" in count:
             mhm_df.at[i, larvae_count_col] = "100000"
 
-    larvae_conversion = np.vectorize(entry_to_num)
+    larvae_conversion = np.vectorize(_entry_to_num)
     (
         mhm_df[larvae_count_col],
-        mhm_df[f"{prefix}LarvaeCountMagnitude"],
-        mhm_df[f"{prefix}LarvaeCountIsRangeFlag"],
+        mhm_df[magnitude],
+        mhm_df[range_flag],
     ) = larvae_conversion(mhm_df[larvae_count_col].to_numpy())
 
+    if not inplace:
+        return mhm_df
 
-def has_genus_flag(df, genus_col):
+
+def has_genus_flag(df, genus_col="mhm_Genus", bit_col="mhm_HasGenus", inplace=False):
     """
     Creates a bit flag: `mhm_HasGenus` where 1 denotes a recorded Genus and 0 denotes the contrary.
-    This modifies the DataFrame itself.
 
     Parameters
     ----------
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
-    genus_col : str
-        The column name in the mosquito habitat mapper DataFrame that contains the genus records.
+    genus_col : str, default="mhm_Genus"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the genus records.
+    bit_col : str, default="mhm_HasGenus"
+        The name of the column which will store the generated HasGenus flag
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the HasGenus flag. If `inplace=True` it returns None.
     """
-    df["mhm_HasGenus"] = (~pd.isna(df[genus_col].to_numpy())).astype(int)
+    if not inplace:
+        df = df.copy()
+    df[bit_col] = (~pd.isna(df[genus_col].to_numpy())).astype(int)
+
+    if not inplace:
+        return df
 
 
-def infectious_genus_flag(df, genus_col):
+def infectious_genus_flag(
+    df, genus_col="mhm_Genus", bit_col="mhm_IsGenusOfInterest", inplace=False
+):
     """
     Creates a bit flag: `mhm_IsGenusOfInterest` where 1 denotes a Genus of a infectious mosquito and 0 denotes the contrary.
-    This modifies the DataFrame itself.
 
     Parameters
     ----------
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
-    genus_col : str
-        The column name in the mosquito habitat mapper DataFrame that contains the genus records.
+    genus_col : str, default="mhm_Genus"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the genus records.
+    bit_col : str, default="mhm_HasGenus"
+        The name of the column which will store the generated IsGenusOfInterest flag
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the IsGenusOfInterest flag. If `inplace=True` it returns None.
     """
+    if not inplace:
+        df = df.copy()
     infectious_genus_flag = np.vectorize(
         lambda genus: genus in ["Aedes", "Anopheles", "Culex"]
     )
-    df["mhm_IsGenusOfInterest"] = infectious_genus_flag(
-        df[genus_col].to_numpy()
-    ).astype(int)
+    df[bit_col] = infectious_genus_flag(df[genus_col].to_numpy()).astype(int)
+
+    if not inplace:
+        return df
 
 
-def is_container_flag(df, watersource_col):
+def is_container_flag(
+    df,
+    watersource_col="mhm_WaterSourceType",
+    bit_col="mhm_IsWaterSourceContainer",
+    inplace=False,
+):
     """
     Creates a bit flag: `mhm_IsWaterSourceContainer` where 1 denotes if a watersource is a container (e.g. ovitrap, pots, tires, etc.) and 0 denotes the contrary.
-    This modifies the DataFrame itself.
 
     Parameters
     ----------
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
-    watersource_col : str
-        The column name in the mosquito habitat mapper DataFrame that contains the watersource type records.
+    watersource_col : str, default="mhm_WaterSourceType"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the watersource type records.
+    bit_col : str, default="mhm_IsWaterSourceContainer"
+        The name of the column which will store the generated IsWaterSourceContainer flag
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the IsContainer flag. If `inplace=True` it returns None.
     """
+
+    if not inplace:
+        df = df.copy()
 
     mark_containers = np.vectorize(lambda container: "container" in container)
-    df["mhm_IsWaterSourceContainer"] = mark_containers(
-        df[watersource_col].to_numpy()
-    ).astype(int)
+    df[bit_col] = mark_containers(df[watersource_col].to_numpy()).astype(int)
+
+    if not inplace:
+        return df
 
 
-def has_watersource_flag(df, watersource_col):
+def has_watersource_flag(
+    df, watersource_col="mhm_WaterSource", bit_col="mhm_HasWaterSource", inplace=False
+):
     """
     Creates a bit flag: `mhm_HasWaterSource` where 1 denotes if there is a watersource and 0 denotes the contrary.
-    This modifies the DataFrame itself.
 
     Parameters
     ----------
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
-    watersource_col : str
-        The column name in the mosquito habitat mapper DataFrame that contains the watersource records.
+    watersource_col : str, default="mhm_WaterSource"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the watersource records.
+    bit_col : str, default="mhm_IsWaterSourceContainer"
+        The name of the column which will store the generated HasWaterSource flag
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the HasWaterSource flag. If `inplace=True` it returns None.
     """
 
+    if not inplace:
+        df = df.copy()
     has_watersource = np.vectorize(lambda watersource: int(not pd.isna(watersource)))
-    df["mhm_HasWaterSource"] = has_watersource(df[watersource_col].to_numpy())
+    df[bit_col] = has_watersource(df[watersource_col].to_numpy())
+
+    if not inplace:
+        return df
 
 
-def photo_bit_flags(df, watersource_photos, larvae_photos, abdomen_photos):
+def photo_bit_flags(
+    df,
+    watersource_photos="mhm_WaterSourcePhotoUrls",
+    larvae_photos="mhm_LarvaFullBodyPhotoUrls",
+    abdomen_photos="mhm_AbdomenCloseupPhotoUrls",
+    photo_count="mhm_PhotoCount",
+    rejected_count="mhm_RejectedCount",
+    pending_count="mhm_PendingCount",
+    photo_bit_binary="mhm_PhotoBitBinary",
+    photo_bit_decimal="mhm_PhotoBitDecimal",
+    inplace=False,
+):
     """
     Creates the following flags:
-    - `mhm_PhotoCount`: The number of valid photos per record.
-    - `mhm_RejectedCount`: The number of photos that were rejected per record.
-    - `mhm_PendingCount`: The number of photos that are pending approval per record.
-    - `mhm_PhotoBitBinary`: A string that represents the presence of a photo in the order of watersource, larvae, and abdomen. For example, if the entry is `110`, that indicates that there is a water source photo and a larvae photo, but no abdomen photo.
-    - `mhm_PhotoBitDecimal`: The numerical representation of the mhm_PhotoBitBinary string.
-
-    This modifies the DataFrame itself.
+    - `PhotoCount`: The number of valid photos per record.
+    - `RejectedCount`: The number of photos that were rejected per record.
+    - `PendingCount`: The number of photos that are pending approval per record.
+    - `PhotoBitBinary`: A string that represents the presence of a photo in the order of watersource, larvae, and abdomen. For example, if the entry is `110`, that indicates that there is a water source photo and a larvae photo, but no abdomen photo.
+    - `PhotoBitDecimal`: The numerical representation of the mhm_PhotoBitBinary string.
 
     Parameters
     ----------
     df : pd.DataFrame
         A mosquito habitat mapper DataFrame
-    watersource_photos : str
-        The column name in the mosquito habitat mapper DataFrame that contains the watersource photo url records.
-    larvae_photos : str
-        The column name in the mosquito habitat mapper DataFrame that contains the larvae photo url records.
-    abdomen_photos : str
-        The column name in the mosquito habitat mapper DataFrame that contains the abdomen photo url records.
+    watersource_photos : str, default="mhm_WaterSourcePhotoUrls"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the watersource photo url records.
+    larvae_photos : str, default="mhm_LarvaFullBodyPhotoUrls"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the larvae photo url records.
+    abdomen_photos : str, default="mhm_AbdomenCloseupPhotoUrls"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the abdomen photo url records.
+    photo_count : str, default="mhm_PhotoCount"
+        The name of the column that will store the PhotoCount flag.
+    rejected_count : str, default="mhm_RejectedCount"
+        The name of the column that will store the RejectedCount flag.
+    pending_count : str, default="mhm_PendingCount"
+        The name of the column that will store the PendingCount flag.
+    photo_bit_binary : str, default="mhm_PhotoBitBinary"
+        The name of the column that will store the PhotoBitBinary flag.
+    photo_bit_decimal : str, default="mhm_PhotoBitDecimal"
+        The name of the column that will store the PhotoBitDecimal flag.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the photo flags. If `inplace=True` it returns None.
     """
 
     def pic_data(*args):
@@ -230,32 +332,56 @@ def photo_bit_flags(df, watersource_photos, larvae_photos, abdomen_photos):
             int(valid_photo_bit_mask, 2),
         )
 
+    if not inplace:
+        df = df.copy()
+
     get_photo_data = np.vectorize(pic_data)
     (
-        df["mhm_PhotoCount"],
-        df["mhm_RejectedCount"],
-        df["mhm_PendingCount"],
-        df["mhm_PhotoBitBinary"],
-        df["mhm_PhotoBitDecimal"],
+        df[photo_count],
+        df[rejected_count],
+        df[pending_count],
+        df[photo_bit_binary],
+        df[photo_bit_decimal],
     ) = get_photo_data(
         df[watersource_photos].to_numpy(),
         df[larvae_photos].to_numpy(),
         df[abdomen_photos].to_numpy(),
     )
 
+    if not inplace:
+        return df
 
-def completion_score_flag(df):
+
+def completion_score_flag(
+    df,
+    photo_bit_binary="mhm_PhotoBitBinary",
+    has_genus="mhm_HasGenus",
+    sub_completeness="mhm_SubCompletenessScore",
+    completeness="mhm_CumulativeCompletenessScore",
+    inplace=False,
+):
     """
     Adds the following completness score flags:
-    - `mhm_SubCompletenessScore`: The percentage of the watersource photos, larvae photos, abdomen photos, and genus columns that are filled out.
-    - `mhm_CumulativeCompletenessScore`: The percentage of non null values out of all the columns.
-
-    This modifies the DataFrame itself.
+    - `SubCompletenessScore`: The percentage of the watersource photos, larvae photos, abdomen photos, and genus columns that are filled out.
+    - `CumulativeCompletenessScore`: The percentage of non null values out of all the columns.
 
     Parameters
     ----------
     df : pd.DataFrame
-        A mosquito habitat mapper DataFrame with the [`mhm_PhotoBitDecimal`](#photo_bit_flags) and [`mhm_HasGenus`](#has_genus_flags) flags.
+        A mosquito habitat mapper DataFrame with the [`PhotoBitDecimal`](#photo_bit_flags) and [`HasGenus`](#has_genus_flags) flags.
+    photo_bit_binary: str, default="mhm_PhotoBitBinary"
+        The name of the column in the mosquito habitat mapper DataFrame that contains the PhotoBitBinary flag.
+    sub_completeness : str, default="mhm_HasGenus"
+        The name of the column in the mosquito habitat mapper DataFrame that will contain the generated SubCompletenessScore flag.
+    completeness : str, default="mhm_SubCompletenessScore"
+        The name of the column in the mosquito habitat mapper DataFrame that will contain the generated CumulativeCompletenessScore flag.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with completion score flags. If `inplace=True` it returns None.
     """
 
     def sum_bit_mask(bit_mask="0"):
@@ -264,25 +390,31 @@ def completion_score_flag(df):
             total += int(char)
         return total
 
+    if not inplace:
+        df = df.copy()
+
     scores = {}
     scores["sub_score"] = []
     # Cummulative Completion Score
     scores["cumulative_score"] = round(df.count(axis=1) / len(df.columns), 2)
     # Sub-Score
-    for index in range(len(df)):
-        bit_mask = df["mhm_PhotoBitBinary"][index]
-        sub_score = df["mhm_HasGenus"][index] + sum_bit_mask(bit_mask=bit_mask)
+    for index in df.index:
+        bit_mask = df[photo_bit_binary][index]
+        sub_score = df[has_genus][index] + sum_bit_mask(bit_mask=bit_mask)
         sub_score /= 4.0
         scores["sub_score"].append(sub_score)
 
-    df["mhm_SubCompletenessScore"], df["mhm_CumulativeCompletenessScore"] = (
+    df[sub_completeness], df[completeness] = (
         scores["sub_score"],
         scores["cumulative_score"],
     )
 
+    if not inplace:
+        return df
+
 
 def apply_cleanup(mhm_df):
-    """Applies a full cleanup procedure to the mosquito habitat mapper data.
+    """Applies a full cleanup procedure to the mosquito habitat mapper data. Only returns a copy.
     It follows the following steps:
     - Removes Homogenous Columns
     - Renames Latitude and Longitudes
@@ -302,12 +434,15 @@ def apply_cleanup(mhm_df):
         A DataFrame containing the cleaned up Mosquito Habitat Mapper Data
     """
     mhm_df = mhm_df.copy()
-    remove_homogenous_cols(mhm_df)
-    rename_latlon_cols(mhm_df)
-    cleanup_column_prefix(mhm_df)
-    larvae_to_num(mhm_df)
-    round_cols(mhm_df)
-    standardize_null_vals(mhm_df)
+
+    remove_homogenous_cols(
+        mhm_df, ["mosquitohabitatmapperAbdomenCloseupPhotoUrls"], inplace=True
+    )
+    rename_latlon_cols(mhm_df, inplace=True)
+    cleanup_column_prefix(mhm_df, inplace=True)
+    larvae_to_num(mhm_df, inplace=True)
+    round_cols(mhm_df, inplace=True)
+    standardize_null_vals(mhm_df, inplace=True)
     return mhm_df
 
 
@@ -320,23 +455,26 @@ def add_flags(mhm_df):
     - Photo Bit Flags
     - Completion Score Flag
 
+    This returns a copy of the original DataFrame with the flags added onto it.
+
     Parameters
     ----------
     mhm_df : pd.DataFrame
-        A DataFrame containing cleaned up Mosquito Habitat Mapper Data ideally from the [add_flags](#add_flags) method.
-    """
+        A DataFrame containing cleaned up Mosquito Habitat Mapper Data ideally from the method.
 
-    has_genus_flag(mhm_df, "mhm_Genus")
-    infectious_genus_flag(mhm_df, "mhm_Genus")
-    is_container_flag(mhm_df, "mhm_WaterSourceType")
-    has_watersource_flag(mhm_df, "mhm_WaterSource")
-    photo_bit_flags(
-        mhm_df,
-        "mhm_WaterSourcePhotoUrls",
-        "mhm_LarvaFullBodyPhotoUrls",
-        "mhm_AbdomenCloseupPhotoUrls",
-    )
-    completion_score_flag(mhm_df)
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the flagged Mosquito Habitat Mapper Data
+    """
+    mhm_df = mhm_df.copy()
+    has_genus_flag(mhm_df, inplace=True)
+    infectious_genus_flag(mhm_df, inplace=True)
+    is_container_flag(mhm_df, inplace=True)
+    has_watersource_flag(mhm_df, inplace=True)
+    photo_bit_flags(mhm_df, inplace=True)
+    completion_score_flag(mhm_df, inplace=True)
+    return mhm_df
 
 
 def plot_valid_entries(df, bit_col, entry_type):
@@ -427,6 +565,32 @@ def qa_filter(
     has_photos=False,
     is_container=False,
 ):
+    """
+    Can filter a cleaned and flagged mosquito habitat mapper DataFrame based on the following criteria:
+    - `Has Genus`: If the entry has an identified genus
+    - `Min Larvae Count` : Minimum larvae count needed for an entry
+    - `Has Photos` : If the entry contains valid photo entries
+    - `Is Container` : If the entry's watersource was a container
+
+    Returns a copy of the DataFrame
+
+    Parameters
+    ----------
+    has_genus : bool, default=False
+        If True, only entries with an identified genus will be returned.
+    min_larvae_count : int, default=-9999
+        Only entries with a larvae count greater than or equal to this parameter will be included.
+    has_photos : bool, default=False
+        If True, only entries with recorded photos will be returned
+    is_container : bool, default=False
+        If True, only entries with containers will be returned
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame of the applied filters.
+    """
+
     mhm_df = mhm_df[mhm_df["mhm_LarvaeCount"] >= min_larvae_count]
 
     if has_genus:

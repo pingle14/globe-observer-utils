@@ -3,7 +3,6 @@ import pandas as pd
 import pytest
 
 from go_utils.lc import (
-    camel_case,
     extract_classification_name,
     extract_classification_percentage,
     unpack_classifications,
@@ -14,20 +13,6 @@ from go_utils.lc import (
     apply_cleanup,
     add_flags,
 )
-
-
-camel_case_data = [
-    ("abcd efg", [" "], "AbcdEfg"),
-    ("abcd", [" "], "Abcd"),
-    ("one two-three,four.five", [" ", ",", "-", "."], "OneTwoThreeFourFive"),
-]
-
-
-@pytest.mark.landcover
-@pytest.mark.util
-@pytest.mark.parametrize("input, delims, expected", camel_case_data)
-def test_camel_case(input, delims, expected):
-    assert camel_case(input, delims) == expected
 
 
 test_classification = "60% MUC 02 (b) [Trees, Closely Spaced, Deciduous - Broad Leaved]"
@@ -77,37 +62,60 @@ def test_landcover_unpack():
 def test_photo_bit_flags():
     df = pd.DataFrame.from_dict(
         {
-            "up": ["https://test", "pending", np.nan, "rejected", "pending"],
-            "down": ["rejected", "https://test", "rejected", "https://test", "pending"],
-            "north": [np.nan, "https://test", "pending", "rejected", np.nan],
-            "east": [
+            "lc_UpwardPhotoUrl": [
+                "https://test",
+                "pending",
+                np.nan,
+                "rejected",
+                "pending",
+            ],
+            "lc_DownwardPhotoUrl": [
+                "rejected",
+                "https://test",
+                "rejected",
+                "https://test",
+                "pending",
+            ],
+            "lc_NorthPhotoUrl": [np.nan, "https://test", "pending", "rejected", np.nan],
+            "lc_EastPhotoUrl": [
                 "https://test",
                 np.nan,
                 "pending",
                 "rejected",
                 "pending",
             ],
-            "south": [
+            "lc_SouthPhotoUrl": [
                 np.nan,
                 "https://test",
                 "rejected",
                 "pending",
                 "https://test",
             ],
-            "west": ["https://test", "https://test", "pending", "rejected", np.nan],
+            "lc_WestPhotoUrl": [
+                "https://test",
+                "https://test",
+                "pending",
+                "rejected",
+                np.nan,
+            ],
         }
     )
 
-    photo_bit_flags(df, "up", "down", "north", "south", "east", "west")
+    output_df = photo_bit_flags(df)
 
-    assert np.all(df["lc_PhotoCount"] == [3, 4, 0, 1, 1])
-    assert np.all(df["lc_RejectedCount"] == [1, 0, 2, 4, 0])
-    assert np.all(df["lc_PendingCount"] == [0, 1, 3, 1, 3])
-    assert np.all(df["lc_EmptyCount"] == [2, 1, 1, 0, 2])
+    assert np.all(output_df["lc_PhotoCount"] == [3, 4, 0, 1, 1])
+    assert np.all(output_df["lc_RejectedCount"] == [1, 0, 2, 4, 0])
+    assert np.all(output_df["lc_PendingCount"] == [0, 1, 3, 1, 3])
+    assert np.all(output_df["lc_EmptyCount"] == [2, 1, 1, 0, 2])
     assert np.all(
-        df["lc_PhotoBitBinary"] == ["100011", "011101", "000000", "010000", "000100"]
+        output_df["lc_PhotoBitBinary"]
+        == ["100011", "011101", "000000", "010000", "000100"]
     )
-    assert np.all(df["lc_PhotoBitDecimal"] == [35, 29, 0, 16, 4])
+    assert np.all(output_df["lc_PhotoBitDecimal"] == [35, 29, 0, 16, 4])
+
+    assert not output_df.equals(df)
+    photo_bit_flags(df, inplace=True)
+    assert output_df.equals(df)
 
 
 @pytest.mark.landcover
@@ -115,18 +123,24 @@ def test_photo_bit_flags():
 def test_classification_flags():
     df = pd.DataFrame.from_dict(
         {
-            "north": ["test", np.nan, "test", np.nan],
-            "east": [np.nan, np.nan, "test", "test"],
-            "south": [np.nan, "test", "test", np.nan],
-            "west": ["test", np.nan, "test", np.nan],
+            "lc_NorthClassifications": ["test", np.nan, "test", np.nan],
+            "lc_EastClassifications": [np.nan, np.nan, "test", "test"],
+            "lc_SouthClassifications": [np.nan, "test", "test", np.nan],
+            "lc_WestClassifications": ["test", np.nan, "test", np.nan],
         }
     )
 
-    classification_bit_flags(df, "north", "south", "east", "west")
+    output_df = classification_bit_flags(df)
 
-    assert np.all(df["lc_ClassificationCount"] == [2, 1, 4, 1])
-    assert np.all(df["lc_ClassificationBitBinary"] == ["1001", "0100", "1111", "0010"])
-    assert np.all(df["lc_ClassificationBitDecimal"] == [9, 4, 15, 2])
+    assert np.all(output_df["lc_ClassificationCount"] == [2, 1, 4, 1])
+    assert np.all(
+        output_df["lc_ClassificationBitBinary"] == ["1001", "0100", "1111", "0010"]
+    )
+    assert np.all(output_df["lc_ClassificationBitDecimal"] == [9, 4, 15, 2])
+
+    assert not output_df.equals(df)
+    classification_bit_flags(df, inplace=True)
+    assert output_df.equals(df)
 
 
 @pytest.mark.landcover
@@ -134,42 +148,47 @@ def test_classification_flags():
 def test_completion_scores():
     df = pd.DataFrame.from_dict(
         {
-            "up": ["https://test", "pending", np.nan, "rejected"],
-            "down": ["rejected", "https://test", "rejected", "https://test"],
-            "north": [np.nan, "https://test", "pending", "rejected"],
-            "east": [
+            "lc_UpwardPhotoUrl": ["https://test", "pending", np.nan, "rejected"],
+            "lc_DownwardPhotoUrl": [
+                "rejected",
+                "https://test",
+                "rejected",
+                "https://test",
+            ],
+            "lc_NorthPhotoUrl": [np.nan, "https://test", "pending", "rejected"],
+            "lc_EastPhotoUrl": [
                 "https://test",
                 np.nan,
                 "pending",
                 "rejected",
             ],
-            "south": [
+            "lc_SouthPhotoUrl": [
                 np.nan,
                 "https://test",
                 "rejected",
                 "pending",
             ],
-            "west": ["https://test", "https://test", "pending", "rejected"],
-            "north_classification": ["test", np.nan, "test", np.nan],
-            "east_classification": [np.nan, np.nan, "test", "test"],
-            "south_classification": [np.nan, "test", "test", np.nan],
-            "west_classification": ["test", np.nan, "test", np.nan],
+            "lc_WestPhotoUrl": ["https://test", "https://test", "pending", "rejected"],
+            "lc_NorthClassifications": ["test", np.nan, "test", np.nan],
+            "lc_EastClassifications": [np.nan, np.nan, "test", "test"],
+            "lc_SouthClassifications": [np.nan, "test", "test", np.nan],
+            "lc_WestClassifications": ["test", np.nan, "test", np.nan],
             "extra": ["a", np.nan, "b", np.nan],
         }
     )
 
-    photo_bit_flags(df, "up", "down", "north", "south", "east", "west")
-    classification_bit_flags(
-        df,
-        "north_classification",
-        "south_classification",
-        "east_classification",
-        "west_classification",
-    )
-    completion_scores(df)
+    photo_bit_flags(df, inplace=True)
+    classification_bit_flags(df, inplace=True)
+    output_df = completion_scores(df)
 
-    assert np.all(df["lc_SubCompletenessScore"] == [0.5, 0.5, 0.4, 0.2])
-    assert np.all(df["lc_CumulativeCompletenessScore"] == [0.80, 0.75, 0.95, 0.80])
+    assert np.all(output_df["lc_SubCompletenessScore"] == [0.5, 0.5, 0.4, 0.2])
+    assert np.all(
+        output_df["lc_CumulativeCompletenessScore"] == [0.80, 0.75, 0.95, 0.80]
+    )
+
+    assert not output_df.equals(df)
+    completion_scores(df, inplace=True)
+    assert output_df.equals(df)
 
 
 @pytest.mark.landcover
@@ -177,7 +196,7 @@ def test_completion_scores():
 def test_qa_filter():
     lc_df = pd.read_csv("go_utils/tests/sample_data/lc.csv")
     lc_df = apply_cleanup(lc_df)
-    add_flags(lc_df)
+    lc_df = add_flags(lc_df)
 
     # Make sure default changes nothing
     assert len(lc_df) == len(qa_filter(lc_df))

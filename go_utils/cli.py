@@ -2,12 +2,10 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from go_utils.download import get_api_data, get_country_api_data
+from go_utils.download import get_api_data
+from go_utils.geoenrich import get_country_api_data
 from go_utils import mhm, lc
-from go_utils.photo_download import (
-    download_cleaned_mhm_photos,
-    download_cleaned_lc_photos,
-)
+from go_utils.photo_download import download_mhm_photos, download_lc_photos
 
 protocol_map = {"mosquito": "mosquito_habitat_mapper", "landcover": "land_covers"}
 
@@ -194,18 +192,31 @@ def mhm_photo_download():
         help="Include Species in Filename if it is classified",
         action="store_true",
     )
+
+    parser.add_argument(
+        "--all",
+        "-a",
+        help="Include all of the flags",
+        action="store_true",
+    )
     args = parser.parse_args()
+
+    download_args = {}
+    if not args.species:
+        download_args["species_col"] = ""
+    if not args.larvae:
+        download_args["larvae_photo"] = ""
+    if not args.watersource:
+        download_args["watersource_photo"] = ""
+    if not args.abdomen:
+        download_args["abdomen_photo"] = ""
 
     df = pd.read_csv(args.input)
 
-    download_cleaned_mhm_photos(
-        df,
-        args.out,
-        args.species,
-        args.larvae,
-        args.watersource,
-        args.abdomen,
-    )
+    if args.all:
+        download_mhm_photos(df, args.out)
+    else:
+        download_mhm_photos(df, args.out ** download_args)
 
 
 def lc_photo_download():
@@ -234,20 +245,23 @@ def lc_photo_download():
     parser.add_argument("--all", "-a", help="Include All Photos", action="store_true")
     args = parser.parse_args()
 
+    download_args = {}
+    if not args.up:
+        download_args["up_photo"] = ""
+    if not args.down:
+        download_args["down_photo"] = ""
+    if not args.north:
+        download_args["north_photo"] = ""
+    if not args.south:
+        download_args["south_photo"] = ""
+    if not args.east:
+        download_args["east_photo"] = ""
+    if not args.west:
+        download_args["west_photo"] = ""
+
     df = pd.read_csv(args.input)
 
     if args.all:
-        download_cleaned_lc_photos(
-            df, args.out, True, True, True, True, True, True, args.verbose
-        )
+        download_lc_photos(df, args.out)
     else:
-        download_cleaned_lc_photos(
-            df,
-            args.out,
-            args.up,
-            args.down,
-            args.north,
-            args.south,
-            args.east,
-            args.west,
-        )
+        download_lc_photos(df, args.out, **download_args)

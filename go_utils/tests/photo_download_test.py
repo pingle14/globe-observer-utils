@@ -5,8 +5,8 @@ import shutil
 from go_utils.photo_download import (
     get_mhm_download_targets,
     get_lc_download_targets,
-    download_cleaned_mhm_photos,
-    download_cleaned_lc_photos,
+    download_mhm_photos,
+    download_lc_photos,
 )
 
 
@@ -68,50 +68,27 @@ desired_lc_names = [
     "lc-Down-2021-01-05-38547-2075772.png",
 ]
 
-mhm_cols = [
-    "mhm_WaterSource",
-    "mhm_measuredDate",
-    "mhm_MosquitoHabitatMapperId",
-    "mhm_Genus",
-    "mhm_Species",
-    "mhm_LarvaFullBodyPhotoUrls",
-    "mhm_WaterSourcePhotoUrls",
-    "mhm_AbdomenCloseupPhotoUrls",
-]
-lc_cols = [
-    "lc_measuredDate",
-    "lc_LandCoverId",
-    "lc_UpwardPhotoUrl",
-    "lc_DownwardPhotoUrl",
-    "lc_NorthPhotoUrl",
-    "lc_SouthPhotoUrl",
-    "lc_EastPhotoUrl",
-    "lc_WestPhotoUrl",
-]
-
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, cols, desired",
+    "input_file, func, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            mhm_cols,
             desired_mhm_names,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            lc_cols,
             desired_lc_names,
         ),
     ],
 )
-def test_naming(input_file, func, cols, desired):
+def test_naming(input_file, func, desired):
     df = pd.read_csv(input_file)
 
-    targets = func(df, "", *cols)
+    targets = func(df, "")
     print(targets)
     success = True
     for target in targets:
@@ -126,8 +103,8 @@ def test_naming(input_file, func, cols, desired):
 @pytest.fixture(
     scope="module",
     params=[
-        ("go_utils/tests/sample_data/mhm_small.csv", download_cleaned_mhm_photos),
-        ("go_utils/tests/sample_data/lc_small.csv", download_cleaned_lc_photos),
+        ("go_utils/tests/sample_data/mhm_small.csv", download_mhm_photos),
+        ("go_utils/tests/sample_data/lc_small.csv", download_lc_photos),
     ],
 )
 def photodownload_setup(request):
