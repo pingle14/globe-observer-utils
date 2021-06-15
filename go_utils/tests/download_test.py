@@ -6,16 +6,14 @@ from go_utils.geoenrich import get_country_api_data
 from test_data import sample_lc_json, sample_mhm_json, globe_down_json
 
 globe_test_data = [sample_lc_json, sample_mhm_json]
-protocol_prefixes = [("mosquito_habitat_mapper", "mhm")]
+protocol_prefixes = [("land_covers", "lc"), ("mosquito_habitat_mapper", "mhm")]
 
 
 def assert_dates(df, prefix):
-    assert type(df[f"{prefix}_MeasuredAt"]) is not str
-    measured_date = f"{prefix}_measuredDate"
-
-    # FIXME: Figure out the null issue with the measured date column in AGO
-    if measured_date in df.columns:
-        assert type(df[measured_date]) is not str
+    first_index = df.index[0]
+    date_cols = [col for col in df.columns if "MeasuredAt" in col or "Date" in col]
+    for col in date_cols:
+        assert type(df.loc[first_index, col]) is not str
 
 
 @pytest.mark.util

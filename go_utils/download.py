@@ -97,8 +97,7 @@ def get_api_data(
 def convert_dates_to_datetime(df, protocol):
     date_columns = [col for col in df.columns if "Date" in col or "MeasuredAt" in col]
     for column in date_columns:
-        if type(df.loc[0, column]) is str:
-            df[column] = pd.to_datetime(df[column], errors="coerce")
+        df[column] = pd.to_datetime(df[column], errors="coerce")
 
 
 def default_data_clean(df, protocol):

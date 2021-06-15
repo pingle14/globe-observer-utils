@@ -59,6 +59,8 @@ def remove_homogenous_cols(df, exclude=[], inplace=False):
     ----------
     df : pd.DataFrame
         The DataFrame that will be modified
+    exclude : list of str, default=[]
+        A list of any columns that should be excluded from this removal.
     inplace : bool, default=False
         Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
 

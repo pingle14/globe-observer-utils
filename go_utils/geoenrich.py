@@ -36,7 +36,7 @@ def get_country_api_data(
     """
 
     item_id_dict = {
-        "mosquito_habitat_mapper": "02e3c448f42e4c35a2dd0c6cbbf42d85",
+        "mosquito_habitat_mapper": "4e8bdb70b3d6424b8831e9cc621cf3b6",
         "land_covers": "c68acbfc68db4409b495fd4636646aa6",
     }
 
@@ -85,12 +85,9 @@ def get_country_api_data(
     convert_dates_to_datetime(df, protocol)
 
     df = df[(df[measured_at] >= start) & (df[measured_at] <= end)]
-    for column in df.columns:
-        print(column)
+
     if is_clean:
         df = default_data_clean(df, protocol)
-    for column in df.columns:
-        print(column)
 
     if countries:
         df = _get_valid_countries(df, protocol, countries)
