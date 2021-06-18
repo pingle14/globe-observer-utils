@@ -27,6 +27,19 @@ jobs:
         pip install -e .
         pip install pytest
         pytest -vv go_utils
+    - name: Run CLI Scripts
+      run: | 
+        globe-mhm-download -s "2021-05-01" -e "2021-05-31" -o MHM_Regular_Test.csv
+        globe-mhm-download -s "2017-06-01" -e "2021-05-31" -o MHM_Regular_Test.csv
+        globe-lc-download -s "2021-05-01" -e "2021-05-31" -o LC_Regular_Test.csv
+        globe-lc-download -s "2017-06-01" -e "2021-05-31" -o LC_Regular_Test.csv
+        globe-mhm-download -s "2021-05-01" -e "2021-05-31" -c "United States" -o MHM_Country_Test.csv
+        globe-mhm-download -s "2017-06-01" -e "2021-05-31" -c "United States" -o MHM_Country_Test.csv
+        globe-lc-download -s "2021-05-01" -e "2021-05-31" -c "United States" -o LC_Country_Test.csv
+        globe-lc-download -s "2017-06-01" -e "2021-05-31" -c "United States" -o LC_Country_Test.csv
+        globe-mhm-photo-download go_utils/tests/sample_data/mhm_small.csv test_photos -a
+        globe-lc-photo-download go_utils/tests/sample_data/lc_small.csv test_photos -a
+        
   format:
     name: Format
     runs-on: ubuntu-latest

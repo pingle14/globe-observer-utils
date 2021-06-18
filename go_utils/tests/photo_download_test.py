@@ -48,12 +48,10 @@ desired_lc_names = [
     "lc-Up-2021-01-03-38532-2074026.png",
     "lc-West-2021-01-03-38532-2074025.png",
     "lc-East-2021-01-03-38532-2074023.png",
-    "lc-Down-2021-01-03-38532-2074027.png",
     "lc-North-2021-01-05-38550-2076062.png",
     "lc-South-2021-01-05-38550-2076064.png",
     "lc-Up-2021-01-05-38550-2076066.png",
     "lc-West-2021-01-05-38550-2076065.png",
-    "lc-Down-2021-01-05-38550-2076067.png",
     "lc-North-2021-01-04-38535-2075102.png",
     "lc-South-2021-01-04-38535-2075104.png",
     "lc-Up-2021-01-04-38535-2075106.png",
@@ -65,7 +63,6 @@ desired_lc_names = [
     "lc-Up-2021-01-05-38547-2075771.png",
     "lc-West-2021-01-05-38547-2075770.png",
     "lc-East-2021-01-05-38547-2075768.png",
-    "lc-Down-2021-01-05-38547-2075772.png",
 ]
 
 
@@ -89,15 +86,20 @@ def test_naming(input_file, func, desired):
     df = pd.read_csv(input_file)
 
     targets = func(df, "")
-    print(targets)
     success = True
-    for target in targets:
-        if target[2] not in desired:
-            print(target[2])
+    output_filenames = [target[2] for target in targets]
+    for filename in desired:
+        if filename not in output_filenames:
             success = False
+            print(filename)
+
+    for filename in output_filenames:
+        if filename not in desired:
+            success = False
+            print(filename)
 
     assert success
-    assert len(targets) == len(desired)
+    assert len(output_filenames) == len(desired)
 
 
 @pytest.fixture(

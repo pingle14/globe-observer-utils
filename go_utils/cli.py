@@ -67,13 +67,6 @@ def download_data(protocol, args):
     else:
         df = get_api_data(**func_args)
 
-    if "mosquito" in protocol:
-        df = mhm.apply_cleanup(df)
-        mhm.add_flags(df)
-    else:
-        df = lc.apply_cleanup(df)
-        lc.add_flags(df)
-
     return df
 
 
@@ -184,7 +177,7 @@ def mhm_photo_download():
         "--watersource", "-w", help="Include Watersource Photos", action="store_true"
     )
     parser.add_argument(
-        "--abdomen", "-a", help="Include Abdomen Photos", action="store_true"
+        "--abdomen", "-ab", help="Include Abdomen Photos", action="store_true"
     )
     parser.add_argument(
         "--species",
@@ -216,7 +209,7 @@ def mhm_photo_download():
     if args.all:
         download_mhm_photos(df, args.out)
     else:
-        download_mhm_photos(df, args.out ** download_args)
+        download_mhm_photos(df, args.out, **download_args)
 
 
 def lc_photo_download():

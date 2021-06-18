@@ -134,3 +134,6 @@ globe-observer-utils-docs/
 
 # Ignore Photo Directory
 test_photos/
+
+# Ignore any test CSVs
+*Test.csv

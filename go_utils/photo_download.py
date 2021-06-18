@@ -111,7 +111,7 @@ def get_mhm_download_targets(
 
         urls = url_entry.split(";")
         for url in urls:
-            if pd.isna(url):
+            if pd.isna(url) or "https" not in url:
                 continue
             photo_id = get_globe_photo_id(url)
 
@@ -239,7 +239,7 @@ def get_lc_download_targets(
     targets = set()
 
     def get_photo_args(url, direction, date, lc_id):
-        if pd.isna(url):
+        if pd.isna(url) or "https" not in url:
             return
 
         photo_id = get_globe_photo_id(url)

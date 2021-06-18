@@ -87,7 +87,6 @@ def get_api_data(
     # Convert measured date data into datetime
     df = parse_api_data(response.json())
     convert_dates_to_datetime(df, protocol)
-    print(df.columns)
 
     if is_clean:
         df = default_data_clean(df, protocol)

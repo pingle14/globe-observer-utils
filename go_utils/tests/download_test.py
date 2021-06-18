@@ -35,7 +35,6 @@ def test_bad_api_call():
         get_api_data("asdf")
 
 
-@pytest.mark.temp
 @pytest.mark.downloadtest
 @pytest.mark.parametrize("protocol, prefix", protocol_prefixes)
 def test_country_download(protocol, prefix):
