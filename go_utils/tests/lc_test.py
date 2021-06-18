@@ -12,6 +12,7 @@ from go_utils.lc import (
     qa_filter,
     apply_cleanup,
     add_flags,
+    get_main_classifications,
 )
 
 
@@ -140,6 +141,63 @@ def test_classification_flags():
 
     assert not output_df.equals(df)
     classification_bit_flags(df, inplace=True)
+    assert output_df.equals(df)
+
+
+@pytest.mark.landcover
+@pytest.mark.flagging
+def test_main_classification():
+    df = pd.DataFrame.from_dict(
+        {
+            "lc_NorthClassifications": [
+                "25% [1]; 75% [2]",
+                np.nan,
+                "25% [1]; 25% [2]; 80% [3]",
+                np.nan,
+            ],
+            "lc_EastClassifications": [
+                "25% [1]; 35% [4]",
+                "100% [2]",
+                "10% [1]; 25% [3]; 60% [4]",
+                "10% [2]; 25% [3]; 60% [4]",
+            ],
+            "lc_SouthClassifications": [
+                "75% [2]",
+                "100% [1]",
+                "25% [1]; 60% [4]",
+                "40% [1]; 60% [2]",
+            ],
+            "lc_WestClassifications": [
+                "10% [1]; 25% [3]; 60% [4]",
+                np.nan,
+                "25% [1]; 75% [2]",
+                "40% [2]; 40% [1]; 10% [3]; 10% [4]",
+            ],
+        }
+    )
+
+    desired_dict = {
+        "lc_NorthPrimary": ["2", "NA", "3", "NA"],
+        "lc_NorthSecondary": ["1", "NA", "1, 2", "NA"],
+        "lc_EastPrimary": ["4", "2", "4", "4"],
+        "lc_EastSecondary": ["1", "NA", "3", "3"],
+        "lc_SouthPrimary": ["2", "1", "4", "2"],
+        "lc_SouthSecondary": ["NA", "NA", "1", "1"],
+        "lc_WestPrimary": ["4", "NA", "2", "2, 1"],
+        "lc_WestSecondary": ["3", "NA", "1", "3, 4"],
+        "lc_PrimaryClassification": ["2", "2, 1", "4", "2"],
+        "lc_SecondaryClassification": ["4", "NA", "3", "1"],
+        "lc_PrimaryPercentage": [37.5, 25, 30, 27.5],
+        "lc_SecondaryPercentage": [23.75, 0, 26.25, 20],
+    }
+
+    output_df = get_main_classifications(df)
+
+    for column, desired in desired_dict.items():
+        assert np.all(output_df[column] == desired)
+
+    assert not output_df.equals(df)
+    get_main_classifications(df, inplace=True)
     assert output_df.equals(df)
 
 

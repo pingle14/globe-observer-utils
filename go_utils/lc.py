@@ -573,6 +573,7 @@ def add_flags(lc_df):
     lc_df = lc_df.copy()
     photo_bit_flags(lc_df, inplace=True)
     classification_bit_flags(lc_df, inplace=True)
+    get_main_classifications(lc_df, inplace=True)
     completion_scores(lc_df, inplace=True)
     return lc_df
 
@@ -719,3 +720,128 @@ def qa_filter(
         lc_df = lc_df[lc_df["lc_PhotoBitDecimal"] == 63]
 
     return lc_df
+
+
+def _accumulate_ties(classification_list):
+    classifications = list()
+    i = 0
+    while i < len(classification_list) - 1:
+        if classification_list[i][1] == classification_list[i + 1][1]:
+            classifications.append(classification_list[i][0])
+            classifications.append(classification_list[i + 1][0])
+            i += 1
+        else:
+            break
+
+    output = ", ".join([classification for classification in classifications])
+    if not output:
+        if len(classification_list) != 0:
+            output = classification_list[0][0]
+        else:
+            output = "NA"
+    # TODO replace w regex methods
+    return output, i + 1
+
+
+def _rank_direction(classification_dict, direction_classifications):
+    if pd.isna(direction_classifications):
+        return "NA", "NA"
+    classifications_list = []
+    classifications = direction_classifications.split(";")
+    for classification_data in classifications:
+        percent = extract_classification_percentage(classification_data)
+        classification = extract_classification_name(classification_data)
+        if classification in classification_dict:
+            classification_dict[classification] += percent
+        else:
+            classification_dict[classification] = percent
+        classifications_list.append((classification, percent))
+    classifications_list = sorted(
+        classifications_list, key=lambda x: x[1], reverse=True
+    )
+    if len(classifications_list) < 2:
+        return classifications_list[0][0], "NA"
+
+    primary_classification, i = _accumulate_ties(classifications_list)
+    secondary_classification, temp = _accumulate_ties(classifications_list[i:])
+
+    return primary_classification, secondary_classification
+
+
+def _rank_classifications(*args):
+    classification_dict = {}
+    rank_directions = [
+        classification
+        for arg in args
+        for classification in _rank_direction(classification_dict, arg)
+    ]
+    primary, secondary = ("NA", 0), ("NA", 0)
+    if classification_dict:
+        if len(classification_dict) < 2:
+            primary = (
+                list(classification_dict.keys())[0],
+                list(classification_dict.values())[0],
+            )
+        else:
+            sorted_classifications = sorted(
+                classification_dict.items(), key=lambda x: x[1], reverse=True
+            )
+            primary, i = _accumulate_ties(sorted_classifications)
+            primary = primary, sorted_classifications[0][1]
+            if i < len(sorted_classifications):
+                secondary, temp = _accumulate_ties(sorted_classifications[i:])
+                secondary = secondary, sorted_classifications[i][1]
+    return (
+        *rank_directions,
+        primary[0],
+        secondary[0],
+        primary[1] / len(args),
+        secondary[1] / len(args),
+    )
+
+
+def get_main_classifications(
+    lc_df,
+    north_classification="lc_NorthClassifications",
+    east_classification="lc_EastClassifications",
+    south_classification="lc_SouthClassifications",
+    west_classification="lc_WestClassifications",
+    north_primary="lc_NorthPrimary",
+    north_secondary="lc_NorthSecondary",
+    east_primary="lc_EastPrimary",
+    east_secondary="lc_EastSecondary",
+    south_primary="lc_SouthPrimary",
+    south_secondary="lc_SouthSecondary",
+    west_primary="lc_WestPrimary",
+    west_secondary="lc_WestSecondary",
+    primary_classification="lc_PrimaryClassification",
+    secondary_classification="lc_SecondaryClassification",
+    primary_percentage="lc_PrimaryPercentage",
+    secondary_percentage="lc_SecondaryPercentage",
+    inplace=False,
+):
+    if not inplace:
+        lc_df = lc_df.copy()
+    vectorized_rank = np.vectorize(_rank_classifications)
+    (
+        lc_df[north_primary],
+        lc_df[north_secondary],
+        lc_df[east_primary],
+        lc_df[east_secondary],
+        lc_df[south_primary],
+        lc_df[south_secondary],
+        lc_df[west_primary],
+        lc_df[west_secondary],
+        lc_df[primary_classification],
+        lc_df[secondary_classification],
+        lc_df[primary_percentage],
+        lc_df[secondary_percentage],
+    ) = vectorized_rank(
+        lc_df[north_classification].to_numpy(),
+        lc_df[east_classification].to_numpy(),
+        lc_df[south_classification].to_numpy(),
+        lc_df[west_classification].to_numpy(),
+    )
+
+    if not inplace:
+        return lc_df
