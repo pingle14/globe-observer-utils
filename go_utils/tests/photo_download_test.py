@@ -2,6 +2,8 @@ import pytest
 import pandas as pd
 import shutil
 
+from go_utils.download import convert_dates_to_datetime
+
 from go_utils.photo_download import (
     get_mhm_download_targets,
     get_lc_download_targets,
@@ -84,6 +86,7 @@ desired_lc_names = [
 )
 def test_naming(input_file, func, desired):
     df = pd.read_csv(input_file)
+    convert_dates_to_datetime(df)
 
     targets = func(df, "")
     success = True
@@ -112,6 +115,7 @@ def test_naming(input_file, func, desired):
 def photodownload_setup(request):
     input_file, func = request.param
     df = pd.read_csv(input_file)
+    convert_dates_to_datetime(df)
     yield df, func
     shutil.rmtree(out_directory)
 

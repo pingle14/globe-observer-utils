@@ -2,7 +2,7 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from go_utils.download import get_api_data
+from go_utils.download import get_api_data, convert_dates_to_datetime
 from go_utils.geoenrich import get_country_api_data
 from go_utils import mhm, lc
 from go_utils.photo_download import download_mhm_photos, download_lc_photos
@@ -205,6 +205,7 @@ def mhm_photo_download():
         download_args["abdomen_photo"] = ""
 
     df = pd.read_csv(args.input)
+    convert_dates_to_datetime(df)
 
     if args.all:
         download_mhm_photos(df, args.out)
@@ -253,6 +254,7 @@ def lc_photo_download():
         download_args["west_photo"] = ""
 
     df = pd.read_csv(args.input)
+    convert_dates_to_datetime(df)
 
     if args.all:
         download_lc_photos(df, args.out)

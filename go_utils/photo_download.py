@@ -110,6 +110,7 @@ def get_mhm_download_targets(
             return
 
         urls = url_entry.split(";")
+        date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
         for url in urls:
             if pd.isna(url) or "https" not in url:
                 continue
@@ -120,21 +121,19 @@ def get_mhm_download_targets(
                 classification = "None"
             elif not pd.isna(species):
                 classification = f"{classification} {species}"
-
-            name = f"mhm-{url_type}-{watersource}-{date}-{mhm_id}-{classification}-{photo_id}.png"
+            name = f"mhm-{url_type}-{watersource}-{date_str}-{mhm_id}-{classification}-{photo_id}.png"
 
             targets.add((url, directory, name))
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
         if column_name:
-
             get_mosquito_args = np.vectorize(get_photo_args)
             get_mosquito_args(
                 mhm_df[column_name].to_numpy(),
                 _format_param_name(param_name),
                 mhm_df[watersource_col].to_numpy(),
-                mhm_df[date_col].to_numpy(),
+                mhm_df[date_col],
                 mhm_df[id_col].to_numpy(),
                 mhm_df[genus_col].to_numpy(),
                 mhm_df[species_col].to_numpy() if species_col else "",
@@ -241,10 +240,10 @@ def get_lc_download_targets(
     def get_photo_args(url, direction, date, lc_id):
         if pd.isna(url) or "https" not in url:
             return
-
+        date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
         photo_id = get_globe_photo_id(url)
 
-        name = f"lc-{direction}-{date}-{lc_id}-{photo_id}.png"
+        name = f"lc-{direction}-{date_str}-{lc_id}-{photo_id}.png"
 
         targets.add((url, directory, name))
 
@@ -255,7 +254,7 @@ def get_lc_download_targets(
             get_lc_photo_args(
                 lc_df[column_name].to_numpy(),
                 _format_param_name(param_name),
-                lc_df[date_col].to_numpy(),
+                lc_df[date_col],
                 lc_df[id_col].to_numpy(),
             )
 

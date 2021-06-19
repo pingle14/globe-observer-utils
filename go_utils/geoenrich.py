@@ -82,7 +82,7 @@ def get_country_api_data(
     end = datetime.strptime(end_date, "%Y-%m-%d")
     measured_at = protocol.replace("_", "") + "MeasuredAt"
 
-    convert_dates_to_datetime(df, protocol)
+    convert_dates_to_datetime(df)
 
     df = df[(df[measured_at] >= start) & (df[measured_at] <= end)]
 

@@ -86,14 +86,14 @@ def get_api_data(
 
     # Convert measured date data into datetime
     df = parse_api_data(response.json())
-    convert_dates_to_datetime(df, protocol)
+    convert_dates_to_datetime(df)
 
     if is_clean:
         df = default_data_clean(df, protocol)
     return df
 
 
-def convert_dates_to_datetime(df, protocol):
+def convert_dates_to_datetime(df):
     date_columns = [col for col in df.columns if "Date" in col or "MeasuredAt" in col]
     for column in date_columns:
         df[column] = pd.to_datetime(df[column], errors="coerce")
