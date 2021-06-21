@@ -9,7 +9,6 @@ from go_utils.cleanup import (
     rename_latlon_cols,
     round_cols,
     standardize_null_vals,
-    remove_homogenous_cols,
 )
 
 from go_utils.plot import plot_int_distribution, completeness_histogram, plot_freq_bar
@@ -435,9 +434,6 @@ def apply_cleanup(mhm_df):
     """
     mhm_df = mhm_df.copy()
 
-    remove_homogenous_cols(
-        mhm_df, ["mosquitohabitatmapperAbdomenCloseupPhotoUrls"], inplace=True
-    )
     rename_latlon_cols(mhm_df, inplace=True)
     cleanup_column_prefix(mhm_df, inplace=True)
     larvae_to_num(mhm_df, inplace=True)

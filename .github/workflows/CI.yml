@@ -26,7 +26,9 @@ jobs:
       run: |
         pip install -e .
         pip install pytest
+        pip install nbmake
         pytest -vv go_utils
+        pytest -vv --nbmake "./notebooks"
     - name: Run CLI Scripts
       run: | 
         globe-mhm-download -s "2021-05-01" -e "2021-05-31" -o MHM_Regular_Test.csv

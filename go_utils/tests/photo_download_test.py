@@ -11,7 +11,6 @@ from go_utils.photo_download import (
     download_lc_photos,
 )
 
-
 out_directory = "test_photos"
 desired_mhm_names = [
     "mhm-Larvae-adult mosquito trap-2021-01-05-26415-Aedes incerta-2076283.png",
