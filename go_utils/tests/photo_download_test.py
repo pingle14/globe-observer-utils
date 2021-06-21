@@ -9,6 +9,7 @@ from go_utils.photo_download import (
     get_lc_download_targets,
     download_mhm_photos,
     download_lc_photos,
+    remove_bad_characters,
 )
 
 out_directory = "test_photos"
@@ -65,6 +66,13 @@ desired_lc_names = [
     "lc-West-2021-01-05-38547-2075770.png",
     "lc-East-2021-01-05-38547-2075768.png",
 ]
+
+
+@pytest.mark.photodownload
+@pytest.mark.util
+def test_bad_characters():
+    output = remove_bad_characters('<bad-/test|"\\filename:?>*')
+    assert output == "bad-testfilename"
 
 
 @pytest.mark.photodownload

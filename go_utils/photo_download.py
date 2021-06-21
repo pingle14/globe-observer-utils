@@ -18,6 +18,23 @@ def get_globe_photo_id(url):
     return photo_id
 
 
+def remove_bad_characters(filename):
+    """
+    Removes erroneous characters from filenames. This includes the `/` character as this is assuming that the filename is being passed, not a path that may include that symbol as part of a directory.
+
+    Parameters
+    ----------
+    filename : str
+      A possible filename
+
+    Returns
+    -------
+    str
+        The filename without any erroneous characters
+    """
+    return re.sub(r"[<>:?\"/\\|*]", "", filename)
+
+
 def download_photo(url, directory, filename):
     """
     Downloads a photo to a directory.
@@ -32,7 +49,7 @@ def download_photo(url, directory, filename):
         The name of the photo
     """
     downloaded_obj = requests.get(url, allow_redirects=True)
-    filename = re.sub(r"[<>:?\"|*]", "", filename)
+    filename = remove_bad_characters(filename)
     out_path = os.path.join(directory, filename)
     with open(out_path, "wb") as file:
         file.write(downloaded_obj.content)
@@ -122,7 +139,7 @@ def get_mhm_download_targets(
             elif not pd.isna(species):
                 classification = f"{classification} {species}"
             name = f"mhm-{url_type}-{watersource}-{date_str}-{mhm_id}-{classification}-{photo_id}.png"
-
+            name = remove_bad_characters(name)
             targets.add((url, directory, name))
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
@@ -244,7 +261,7 @@ def get_lc_download_targets(
         photo_id = get_globe_photo_id(url)
 
         name = f"lc-{direction}-{date_str}-{lc_id}-{photo_id}.png"
-
+        name = remove_bad_characters(name)
         targets.add((url, directory, name))
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
