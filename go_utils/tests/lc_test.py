@@ -35,7 +35,9 @@ def test_classification_extraction(func, expected):
     assert func(test_classification) == expected
 
 
-sample_data = "60% MUC 02 (b) [Category one]; 50% MUC 05 (b) [Category two]"
+sample_data_1 = "60% MUC 02 (b) [Category one]; 50% MUC 05 (b) [Category two]"
+sample_data_2 = "33% MUC 02 (b) [Category one]; 25% MUC 05 (b) [Category two]"
+sample_data = [sample_data_1, sample_data_2]
 
 
 @pytest.mark.landcover
@@ -48,14 +50,21 @@ def test_landcover_unpack():
         "lc_SouthClassifications",
     ]
     df = pd.DataFrame.from_dict(
-        {classification: [sample_data] for classification in classifications}
+        {classifications[i]: [sample_data[i % 2]] for i in range(len(classifications))}
     )
     df["lc_pid"] = 0
     df = unpack_classifications(df)
-    for classification in classifications:
-        column_name = classification.replace("Classifications", "_")
-        assert df.loc[0, f"{column_name}CategoryOne"] == 60.0
-        assert df.loc[0, f"{column_name}CategoryTwo"] == 50.0
+    for i in range(len(classifications)):
+        column_name = classifications[i].replace("Classifications", "_")
+        if i % 2 == 0:
+            one, two = 60, 50
+        else:
+            one, two = 33, 25
+        assert df.loc[0, f"{column_name}CategoryOne"] == one
+        assert df.loc[0, f"{column_name}CategoryTwo"] == two
+
+    assert df.loc[0, "lc_Overall_CategoryOne"] == 46.5
+    assert df.loc[0, "lc_Overall_CategoryTwo"] == 37.5
 
 
 @pytest.mark.landcover

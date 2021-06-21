@@ -222,6 +222,8 @@ def unpack_classifications(
         A DataFrame with the unpacked classification columns.
     """
 
+    classifications = [north, east, south, west]
+
     def set_directions(row):
         for classification in classifications:
             if not pd.isnull(row[classification]):
@@ -233,19 +235,30 @@ def unpack_classifications(
                     )
                     name = camel_case(name, [" ", ",", "-", "/"])
                     classification = classification.replace("Classifications", "_")
+                    overall = re.sub(
+                        r"(north|south|east|west).*",
+                        "Overall_",
+                        key,
+                        flags=re.IGNORECASE,
+                    )
                     row[f"{classification}{name.strip()}"] = percent
+                    row[f"{overall}{name.strip()}"] += percent
         return row
-
-    classifications = [north, east, south, west]
 
     land_type_columns_to_add = {
         classification: _get_classifications_for_direction(lc_df, classification)
         for classification in classifications
     }
+    overall_columns = set()
     for key, values in land_type_columns_to_add.items():
-        key = key.replace("Classifications", "_")
+        direction_name = key.replace("Classifications", "_")
+        overall = re.sub(
+            r"(north|south|east|west).*", "Overall_", key, flags=re.IGNORECASE
+        )
         for value in values:
-            lc_df[key + value] = 0.0
+            lc_df[direction_name + value] = 0.0
+            lc_df[overall + value] = 0.0
+            overall_columns.add(overall + value)
     direction_data_cols = sorted(
         [
             name
@@ -259,12 +272,16 @@ def unpack_classifications(
                     "east",
                     "north",
                     "south",
+                    "overall",
                 )
             )
         ]
     )
     lc_df = _move_cols(lc_df, cols_to_move=direction_data_cols, ref_col=ref_col)
-    return lc_df.apply(set_directions, axis=1)
+    lc_df = lc_df.apply(set_directions, axis=1)
+    for column in overall_columns:
+        lc_df[column] /= 4
+    return lc_df
 
 
 def photo_bit_flags(
