@@ -1,0 +1,4 @@
+[run]
+omit = 
+  # Omit the CLI File
+  go_utils/cli.py

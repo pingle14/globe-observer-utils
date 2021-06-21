@@ -91,12 +91,12 @@ def test_naming(input_file, func, desired):
     success = True
     output_filenames = [target[2] for target in targets]
     for filename in desired:
-        if filename not in output_filenames:
+        if filename not in output_filenames:  # pragma: no cover
             success = False
             print(filename)
 
     for filename in output_filenames:
-        if filename not in desired:
+        if filename not in desired:  # pragma: no cover
             success = False
             print(filename)
 

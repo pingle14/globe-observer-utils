@@ -1,5 +1,3 @@
-from datetime import datetime
-import numpy as np
 import pandas as pd
 import requests
 import logging
@@ -108,18 +106,3 @@ def default_data_clean(df, protocol):
         logging.warning("The protocol you entered is not supported for cleanup.")
 
     return df
-
-
-def _convert_to_datetime(date):
-    try:
-        if "T" in date:
-
-            return datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
-        else:
-            return datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-    except (ValueError, TypeError):
-        try:
-            return datetime.strptime(date, "%Y-%m-%d")
-        except (ValueError, TypeError):
-            pass
-    return np.nan

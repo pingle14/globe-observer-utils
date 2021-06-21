@@ -28,7 +28,7 @@ def plot_freq_bar(df, protocol, column, title, plot_type="bar", log_scale=False)
     col_vals["Count"] = df.groupby(column).size()
     col_vals.reset_index(inplace=True)
     col_vals.columns = ["index", "Count"]
-    if len(col_vals) <= 1:
+    if len(col_vals) <= 1:  # pragma: no cover
         logging.warning(
             f"There is only one value for this column: {col_vals['index'][0]}: {col_vals['Count'][0]}"
         )
@@ -39,7 +39,7 @@ def plot_freq_bar(df, protocol, column, title, plot_type="bar", log_scale=False)
         col_vals["Count"] = pd.Series([math.log10(val) for val in col_vals["Count"]])
         ylabel += " (Log Scale)"
         title += " (Log Scale)"
-    if plot_type == "line":
+    if plot_type == "line":  # pragma: no cover
         plt.plot(col_vals["index"], col_vals["Count"], color="lightblue")
     else:
         plt.bar(col_vals["index"], col_vals["Count"], color="lightblue")

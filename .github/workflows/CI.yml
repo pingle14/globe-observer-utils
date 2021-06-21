@@ -27,7 +27,8 @@ jobs:
         pip install -e .
         pip install pytest
         pip install nbmake
-        pytest -vv go_utils
+        pip install pytest-cov
+        pytest -vv --cov-config=.coveragerc --cov=go_utils go_utils/tests/ --cov-fail-under=97 --no-cov-on-fail
         pytest -vv --nbmake "./notebooks"
     - name: Run CLI Scripts
       run: | 
