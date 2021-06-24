@@ -536,7 +536,7 @@ def completion_scores(
         return df
 
 
-def apply_cleanup(lc_df):
+def apply_cleanup(lc_df, unpack=True):
     """Applies a full cleanup procedure to the landcover data.
     It follows the following steps:
     - Removes Homogenous Columns
@@ -552,6 +552,8 @@ def apply_cleanup(lc_df):
     ----------
     lc_df : pd.DataFrame
         A DataFrame containing **raw** Landcover Data from the API.
+    unpack : bool
+        If True, the Landcover data will expand the classifications into separate columns (results in around 300 columns).
 
     Returns
     -------
@@ -563,7 +565,8 @@ def apply_cleanup(lc_df):
     remove_homogenous_cols(lc_df, inplace=True)
     rename_latlon_cols(lc_df, inplace=True)
     cleanup_column_prefix(lc_df, inplace=True)
-    lc_df = unpack_classifications(lc_df)
+    if unpack:
+        lc_df = unpack_classifications(lc_df)
     round_cols(lc_df, inplace=True)
     standardize_null_vals(lc_df, inplace=True)
     return lc_df
