@@ -79,6 +79,8 @@ def _format_param_name(name):
 def get_mhm_download_targets(
     mhm_df,
     directory,
+    latitude_col="mhm_Latitude",
+    longitude_col="mhm_Longitude",
     watersource_col="mhm_WaterSource",
     date_col="mhm_measuredDate",
     id_col="mhm_MosquitoHabitatMapperId",
@@ -97,6 +99,10 @@ def get_mhm_download_targets(
         Mosquito Habitat Mapper Data
     directory : str
         The directory to save the photos
+    latitude_col : str, default="mhm_Latitude"
+        The column name of the column that contains the Latitude
+    longitude_col : str, default="mhm_Longitude"
+        The column name of the column that contains the Longitude
     watersource_col : str, default = "mhm_WaterSource"
         The column name of the column that contains the watersource
     date_col : str, default = "mhm_measuredDate"
@@ -122,7 +128,17 @@ def get_mhm_download_targets(
     arguments = locals()
     targets = set()
 
-    def get_photo_args(url_entry, url_type, watersource, date, mhm_id, genus, species):
+    def get_photo_args(
+        url_entry,
+        url_type,
+        latitude,
+        longitude,
+        watersource,
+        date,
+        mhm_id,
+        genus,
+        species,
+    ):
         if pd.isna(url_entry):
             return
 
@@ -138,7 +154,7 @@ def get_mhm_download_targets(
                 classification = "None"
             elif not pd.isna(species):
                 classification = f"{classification} {species}"
-            name = f"mhm-{url_type}-{watersource}-{date_str}-{mhm_id}-{classification}-{photo_id}.png"
+            name = f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
             name = remove_bad_characters(name)
             targets.add((url, directory, name))
 
@@ -149,6 +165,8 @@ def get_mhm_download_targets(
             get_mosquito_args(
                 mhm_df[column_name].to_numpy(),
                 _format_param_name(param_name),
+                mhm_df[latitude_col].to_numpy(),
+                mhm_df[longitude_col].to_numpy(),
                 mhm_df[watersource_col].to_numpy(),
                 mhm_df[date_col],
                 mhm_df[id_col].to_numpy(),
@@ -161,6 +179,8 @@ def get_mhm_download_targets(
 def download_mhm_photos(
     mhm_df,
     directory,
+    latitude_col="mhm_Latitude",
+    longitude_col="mhm_Longitude",
     watersource_col="mhm_WaterSource",
     date_col="mhm_measuredDate",
     id_col="mhm_MosquitoHabitatMapperId",
@@ -179,6 +199,10 @@ def download_mhm_photos(
         Mosquito Habitat Mapper Data
     directory : str
         The directory to save the photos
+    latitude_col : str, default="mhm_Latitude"
+        The column name of the column that contains the Latitude
+    longitude_col : str, default="mhm_Longitude"
+        The column name of the column that contains the Longitude
     watersource_col : str, default = "mhm_WaterSource"
         The column name of the column that contains the watersource
     date_col : str, default = "mhm_measuredDate"
@@ -211,6 +235,8 @@ def download_mhm_photos(
 def get_lc_download_targets(
     lc_df,
     directory,
+    latitude_col="lc_Latitude",
+    longitude_col="lc_Longitude",
     date_col="lc_measuredDate",
     id_col="lc_LandCoverId",
     up_photo="lc_UpwardPhotoUrl",
@@ -229,6 +255,10 @@ def get_lc_download_targets(
         Cleaned and Flagged Landcover Data
     directory : str
         The directory to save the photos
+    latitude_col : str, default="lc_Latitude"
+        The column of the column that contains the Latitude
+    longitude_col : str, default="lc_Longitude"
+        The column of the column that contains the Longitude
     date_col : str, default="lc_measuredDate"
         The column name of the column that contains the measured date
     id_col : str, default="lc_LandCoverId"
@@ -254,13 +284,14 @@ def get_lc_download_targets(
     arguments = locals()
     targets = set()
 
-    def get_photo_args(url, direction, date, lc_id):
+    def get_photo_args(url, latitude, longitude, direction, date, lc_id):
         if pd.isna(url) or "https" not in url:
             return
+
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
         photo_id = get_globe_photo_id(url)
 
-        name = f"lc-{direction}-{date_str}-{lc_id}-{photo_id}.png"
+        name = f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
         name = remove_bad_characters(name)
         targets.add((url, directory, name))
 
@@ -270,6 +301,8 @@ def get_lc_download_targets(
             get_lc_photo_args = np.vectorize(get_photo_args)
             get_lc_photo_args(
                 lc_df[column_name].to_numpy(),
+                lc_df[latitude_col].to_numpy(),
+                lc_df[longitude_col].to_numpy(),
                 _format_param_name(param_name),
                 lc_df[date_col],
                 lc_df[id_col].to_numpy(),
@@ -281,6 +314,8 @@ def get_lc_download_targets(
 def download_lc_photos(
     lc_df,
     directory,
+    latitude_col="lc_Latitude",
+    longitude_col="lc_Longitude",
     date_col="lc_measuredDate",
     id_col="lc_LandCoverId",
     up_photo="lc_UpwardPhotoUrl",
@@ -299,6 +334,10 @@ def download_lc_photos(
         Cleaned and Flagged Landcover Data
     directory : str
         The directory to save the photos
+    latitude_col : str, default="lc_Latitude"
+        The column of the column that contains the Latitude
+    longitude_col : str, default="lc_Longitude"
+        The column of the column that contains the Longitude
     date_col : str, default="lc_measuredDate"
         The column name of the column that contains the measured date
     id_col : str, default="lc_LandCoverId"
