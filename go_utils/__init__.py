@@ -15,11 +15,12 @@ Here are the major utilities provided by the package:
 - Utilities for cleaning up Mosquito Habitat Mapper and Landcover Datasets
 - CLI Scripts for downloading data and photos for the Mosquito Habitat Mapper and Landcover Protocols.
 
-# Example Notebooks
-
+Example Notebooks
+-----------------
 [Example Notebooks](https://github.com/IGES-Geospatial/globe-observer-utils/tree/main/notebooks) have been made to show basic examples and applications of this library.
 
-# CLI Scripts
+CLI Script Documentation
+-----------
 
 The CLI Scripts are intended to provide fast and accessible ways of collecting cleaned GLOBE Observer data from the commandline. 
 
