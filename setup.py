@@ -65,10 +65,10 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "globe-mhm-download=go_utils.cli:mhm_data_download",
-            "globe-lc-download=go_utils.cli:lc_data_download",
-            "globe-mhm-photo-download=go_utils.cli:mhm_photo_download",
-            "globe-lc-photo-download=go_utils.cli:lc_photo_download",
+            "mhm-download=go_utils._cli:mhm_data_download",
+            "lc-download=go_utils._cli:lc_data_download",
+            "mhm-photo-download=go_utils._cli:mhm_photo_download",
+            "lc-photo-download=go_utils._cli:lc_photo_download",
         ]
     },
     keywords="GlobeObserver GLOBE mosquito landcover",

@@ -179,12 +179,6 @@ def mhm_photo_download():
     parser.add_argument(
         "--abdomen", "-ab", help="Include Abdomen Photos", action="store_true"
     )
-    parser.add_argument(
-        "--species",
-        "-s",
-        help="Include Species in Filename if it is classified",
-        action="store_true",
-    )
 
     parser.add_argument(
         "--all",
@@ -195,8 +189,6 @@ def mhm_photo_download():
     args = parser.parse_args()
 
     download_args = {}
-    if not args.species:
-        download_args["species_col"] = ""
     if not args.larvae:
         download_args["larvae_photo"] = ""
     if not args.watersource:
