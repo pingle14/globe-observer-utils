@@ -131,3 +131,14 @@ dmypy.json
 
 # Ignore docs directories
 globe-observer-utils-docs/
+
+# Ignore Photo Directory
+test_photos/
+
+# Ignore any test CSVs
+*Test.csv
+
+# Ignore CSVs and Photos from sample notebooks
+notebooks/*.csv
+notebooks/MHM_Photos/
+notebooks/LC_Photos/

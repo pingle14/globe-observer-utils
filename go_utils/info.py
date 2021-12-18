@@ -138,6 +138,11 @@ region_dict = {
     "North America": ["Canada", "United States"],
 }
 
+abbreviation_dict = {
+    "mosquito_habitat_mapper": "mhm",
+    "land_covers": "lc",
+}
+
 __doc__ = """
 Useful stored values for GLOBE Observer scripts
 

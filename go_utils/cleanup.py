@@ -46,14 +46,9 @@ The GLOBE API CSV’s lacked standardization in indicating No Data. Indicators r
 """
 
 
-def remove_homogenous_cols(df):
+def remove_homogenous_cols(df, exclude=[], inplace=False):
     """
-    Removes columns froma DataFrame if they contain only 1 unique value. This method will change the DataFrame that is passed.
-
-    For example, if this code is run:
-    ```python
-    from go_utils.cleanup import remove_homogenous_cols
-    remove_homogenous_cols(df)
+    Removes columns froma DataFrame if they contain only 1 unique value.
     ```
 
     Then the original `df` variable that was passed is now updated with these dropped columns.
@@ -64,15 +59,33 @@ def remove_homogenous_cols(df):
     ----------
     df : pd.DataFrame
         The DataFrame that will be modified
+    exclude : list of str, default=[]
+        A list of any columns that should be excluded from this removal.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with homogenous columns removed. If `inplace=True` it returns None.
     """
 
+    if not inplace:
+        df = df.copy()
+
     for column in df.columns:
-        if len(pd.unique(df[column])) == 1:
-            logging.info(f"Dropped: {df[column][0]}")
-            df.drop(column, axis=1, inplace=True)
+        try:
+            if column not in exclude and len(pd.unique(df[column])) == 1:
+                logging.info(f"Dropped: {df[column].iloc[0]}")
+                df.drop(column, axis=1, inplace=True)
+        except TypeError:
+            continue
+
+    if not inplace:
+        return df
 
 
-def replace_column_prefix(df, protocol, replacement_text):
+def replace_column_prefix(df, current_prefix, replacement_text, inplace=False):
     """
     Replaces the protocol prefix (e.g. mosquito_habitat_mapper/mosquitohabitatmapper) for the column names with another prefix in the format of `newPrefix_columnName`.
 
@@ -86,12 +99,22 @@ def replace_column_prefix(df, protocol, replacement_text):
         A string representing the protocol prefix.
     replacement_text : str
         A string representing the desired prefix for the column name.
-    """
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
 
-    protocol = protocol.replace("_", "")
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the column prefixes replaced. If `inplace=True` it returns None.
+    """
+    if not inplace:
+        df = df.copy()
     df.columns = [
-        f"{replacement_text}_{column.replace(protocol,'')}" for column in df.columns
+        f"{replacement_text}_{column.replace(current_prefix,'')}"
+        for column in df.columns
     ]
+    if not inplace:
+        return df
 
 
 def find_column(df, keyword):
@@ -109,7 +132,28 @@ def find_column(df, keyword):
     return [column for column in df.columns if keyword in column][0]
 
 
-def rename_latlon_cols(df):
+def camel_case(string, delimiters=[" "]):
+    """Converts a string into camel case
+
+    Parameters
+    ----------
+    string: str, the string to convert
+    delimiter: str, the character that denotes separate words
+    """
+    for delimiter in delimiters:
+        str_list = [s[0].upper() + s[1:] for s in string.split(delimiter)]
+        string = "".join([s for s in str_list])
+    return string
+
+
+def rename_latlon_cols(
+    df,
+    gps_latitude="",
+    gps_longitude="",
+    mgrs_latitude="latitude",
+    mgrs_longitude="longitude",
+    inplace=False,
+):
     """Renames the latitude and longitude columns of **raw** GLOBE Observer Data to make the naming intuitive.
 
     [This](#differentiating-between-mgrs-and-gps-columns) explains the motivation behind the method.
@@ -124,22 +168,37 @@ def rename_latlon_cols(df):
     ----------
     df : pd.DataFrame
         The DataFrame whose columns require renaming.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the updated Latitude and Longitude column names. If `inplace=True` it returns None.
     """
-    latitude_col = find_column(df, "MeasurementLatitude")
-    longitude_col = find_column(df, "MeasurementLongitude")
+    if not inplace:
+        df = df.copy()
+
+    if not gps_latitude:
+        gps_latitude = find_column(df, "MeasurementLatitude")
+    if not gps_longitude:
+        gps_longitude = find_column(df, "MeasurementLongitude")
     df.rename(
         {
-            latitude_col: "Latitude",
-            longitude_col: "Longitude",
-            "latitude": "MGRSLatitude",
-            "longitude": "MGRSLongitude",
+            gps_latitude: "Latitude",
+            gps_longitude: "Longitude",
+            mgrs_latitude: "MGRSLatitude",
+            mgrs_longitude: "MGRSLongitude",
         },
         axis=1,
         inplace=True,
     )
 
+    if not inplace:
+        return df
 
-def round_cols(df):
+
+def round_cols(df, inplace=False):
     """This rounds columns in the DataFrame. More specifically, latitude and longitude data is rounded to 5 decimal places, other fields are rounded to integers, and null values (for the integer columns) are set to -9999.
 
     See [here](#round-appropriate-columns) for more information.
@@ -154,7 +213,16 @@ def round_cols(df):
     ----------
     df : pd.DataFrame
         The DataFrame that requires rounding.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the rounded values. If `inplace=True` it returns None.
     """
+    if not inplace:
+        df = df.copy()
     # Identifies all the numerical cols
     number_cols = [
         df.columns[i]
@@ -176,8 +244,11 @@ def round_cols(df):
             logging.info(f"Converted to integer: {name}")
             df[name] = df[name].to_numpy().astype(int)
 
+    if not inplace:
+        return df
 
-def standardize_null_vals(df, null_val=np.nan):
+
+def standardize_null_vals(df, null_val=np.nan, inplace=False):
     """
     This method standardizes the null values of **raw** GLOBE Observer Data.
 
@@ -192,7 +263,17 @@ def standardize_null_vals(df, null_val=np.nan):
         The DataFrame that needs null value standardization
     null_val : obj, default=np.nan
         The value that all null values should be set to
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the standardized null values. If `inplace=True` it returns None.
     """
+
+    if not inplace:
+        df = df.copy()
 
     # Replace Null Values with null_val
     df.fillna(null_val, inplace=True)
@@ -208,3 +289,6 @@ def standardize_null_vals(df, null_val=np.nan):
         },
         inplace=True,
     )
+
+    if not inplace:
+        return df

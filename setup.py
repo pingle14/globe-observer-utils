@@ -63,6 +63,14 @@ setup(
         "Documentation": "https://iges-geospatial.github.io/globe-observer-utils-docs/go_utils.html",
         "Bug Tracker": "https://github.com/IGES-Geospatial/globe-observer-utils/issues",
     },
+    entry_points={
+        "console_scripts": [
+            "mhm-download=go_utils._cli:mhm_data_download",
+            "lc-download=go_utils._cli:lc_data_download",
+            "mhm-photo-download=go_utils._cli:mhm_photo_download",
+            "lc-photo-download=go_utils._cli:lc_photo_download",
+        ]
+    },
     keywords="GlobeObserver GLOBE mosquito landcover",
     packages=find_packages(),
     include_package_data=True,

@@ -7,10 +7,11 @@ import seaborn as sns
 
 from go_utils.cleanup import (
     replace_column_prefix,
-    remove_homogenous_cols,
     rename_latlon_cols,
     standardize_null_vals,
     round_cols,
+    camel_case,
+    remove_homogenous_cols,
 )
 from go_utils.plot import completeness_histogram, plot_freq_bar, multiple_bar_graph
 
@@ -31,23 +32,11 @@ There are four main steps to this procedure:
 NOTE: After these procedures, the original directional classification columns (e.g. “lc_EastClassifications”) are not dropped.
 """
 
-classifications = [
-    "lc_WestClassifications",
-    "lc_EastClassifications",
-    "lc_NorthClassifications",
-    "lc_SouthClassifications",
-]
+classifications = []
 
 
-def cleanup_column_prefix(df):
+def cleanup_column_prefix(df, inplace=False):
     """Method for shortening raw landcover column names.
-
-    Example usage:
-    ```python
-    from go_utils.lc import cleanup_column_prefix
-
-    cleanup_column_prefix(df)
-    ```
 
     The df object will now replace the verbose `landcovers` prefix in some of the columns with `lc_`
 
@@ -55,23 +44,22 @@ def cleanup_column_prefix(df):
     ----------
     df : pd.DataFrame
         The DataFrame containing raw landcover data. The DataFrame object itself will be modified.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the cleaned up column prefixes. If `inplace=True` it returns None.
     """
 
-    replace_column_prefix(df, "land_covers", "lc")
+    if not inplace:
+        df = df.copy()
 
+    replace_column_prefix(df, "landcovers", "lc", inplace=True)
 
-def camel_case(string, delimiters=[" "]):
-    """Converts a string into camel case
-
-    Parameters
-    ----------
-    string: str, the string to convert
-    delimiter: str, the character that denotes separate words
-    """
-    for delimiter in delimiters:
-        str_list = [s[0].upper() + s[1:] for s in string.split(delimiter)]
-        string = "".join([s for s in str_list])
-    return string
+    if not inplace:
+        return df
 
 
 def extract_classification_name(entry):
@@ -196,24 +184,18 @@ def _move_cols(df, cols_to_move=[], ref_col=""):
     return df[cols_before_index + cols_at_index + cols_after_index]
 
 
-def _set_directions(row):
-    for classification in classifications:
-        if not pd.isnull(row[classification]):
-            entries = row[classification].split(";")
-            for entry in entries:
-                percent, name = (
-                    extract_classification_percentage(entry),
-                    extract_classification_name(entry),
-                )
-                name = camel_case(name, [" ", ",", "-", "/"])
-                classification = classification.replace("Classifications", "_")
-                row[f"{classification}{name.strip()}"] = percent
-    return row
-
-
-def unpack_classifications(lc_df):
+def unpack_classifications(
+    lc_df,
+    north="lc_NorthClassifications",
+    east="lc_EastClassifications",
+    south="lc_SouthClassifications",
+    west="lc_WestClassifications",
+    ref_col="lc_pid",
+):
     """
     Unpacks the classification data in the *raw* GLOBE Observer Landcover data. This method assumes that the columns have been renamed with accordance to the [column cleanup](#cleanup_column_prefix) method.
+
+    This returns a copy of the dataframe.
 
     See [here](#unpacking-the-landcover-classification-data) for more information.
 
@@ -223,6 +205,16 @@ def unpack_classifications(lc_df):
     ----------
     lc_df : pd.DataFrame
         A DataFrame containing Raw GLOBE Observer Landcover data that has had the column names simplified.
+    north: str, default="lc_NorthClassifications"
+        The name of the column which contains the North Classifications
+    east: str, default="lc_EastClassifications"
+        The name of the column which contains the East Classifications
+    south: str, default="lc_SouthClassifications"
+        The name of the column which contains the South Classifications
+    west: str, default="lc_WestClassifications"
+        The name of the column which contains the West Classifications
+    west: str, default="lc_pid"
+        The name of the column which all of the expanded values will be placed after. For example, if the columns were `[1, 2, 3, 4]` and you chose 3, the new columns will now be `[1, 2, 3, (all classification columns), 4]`.
 
     Returns
     -------
@@ -230,14 +222,43 @@ def unpack_classifications(lc_df):
         A DataFrame with the unpacked classification columns.
     """
 
+    classifications = [north, east, south, west]
+
+    def set_directions(row):
+        for classification in classifications:
+            if not pd.isnull(row[classification]):
+                entries = row[classification].split(";")
+                for entry in entries:
+                    percent, name = (
+                        extract_classification_percentage(entry),
+                        extract_classification_name(entry),
+                    )
+                    name = camel_case(name, [" ", ",", "-", "/"])
+                    classification = classification.replace("Classifications", "_")
+                    overall = re.sub(
+                        r"(north|south|east|west).*",
+                        "Overall_",
+                        key,
+                        flags=re.IGNORECASE,
+                    )
+                    row[f"{classification}{name.strip()}"] = percent
+                    row[f"{overall}{name.strip()}"] += percent
+        return row
+
     land_type_columns_to_add = {
         classification: _get_classifications_for_direction(lc_df, classification)
         for classification in classifications
     }
+    overall_columns = set()
     for key, values in land_type_columns_to_add.items():
-        key = key.replace("Classifications", "_")
+        direction_name = key.replace("Classifications", "_")
+        overall = re.sub(
+            r"(north|south|east|west).*", "Overall_", key, flags=re.IGNORECASE
+        )
         for value in values:
-            lc_df[key + value] = 0.0
+            lc_df[direction_name + value] = 0.0
+            lc_df[overall + value] = 0.0
+            overall_columns.add(overall + value)
     direction_data_cols = sorted(
         [
             name
@@ -251,41 +272,77 @@ def unpack_classifications(lc_df):
                     "east",
                     "north",
                     "south",
+                    "overall",
                 )
             )
         ]
     )
-    lc_df = _move_cols(lc_df, cols_to_move=direction_data_cols, ref_col="lc_pid")
-    return lc_df.apply(_set_directions, axis=1)
+    lc_df = _move_cols(lc_df, cols_to_move=direction_data_cols, ref_col=ref_col)
+    lc_df = lc_df.apply(set_directions, axis=1)
+    for column in overall_columns:
+        lc_df[column] /= 4
+    return lc_df
 
 
-def photo_bit_flags(df, up, down, north, south, east, west):
+def photo_bit_flags(
+    df,
+    up="lc_UpwardPhotoUrl",
+    down="lc_DownwardPhotoUrl",
+    north="lc_NorthPhotoUrl",
+    south="lc_SouthPhotoUrl",
+    east="lc_EastPhotoUrl",
+    west="lc_WestPhotoUrl",
+    photo_count="lc_PhotoCount",
+    rejected_count="lc_RejectedCount",
+    pending_count="lc_PendingCount",
+    empty_count="lc_EmptyCount",
+    bit_binary="lc_PhotoBitBinary",
+    bit_decimal="lc_PhotoBitDecimal",
+    inplace=False,
+):
     """
     Creates the following flags:
-    - `lc_PhotoCount`: The number of valid photos per record.
-    - `lc_RejectedCount`: The number of photos that were rejected per record.
-    - `lc_PendingCount`: The number of photos that are pending approval per record.
-    - `lc_PhotoBitBinary`: A string that represents the presence of a photo in the Up, Down, North, South, East, and West directions. For example, if the entry is `110100`, that indicates that there is a valid photo for the Up, Down, and South Directions but no valid photos for the North, East, and West Directions.
-    - `lc_PhotoBitDecimal`: The numerical representation of the lc_PhotoBitBinary string.
-
-    This modifies the DataFrame itself.
+    - `PhotoCount`: The number of valid photos per record.
+    - `RejectedCount`: The number of photos that were rejected per record.
+    - `PendingCount`: The number of photos that are pending approval per record.
+    - `PhotoBitBinary`: A string that represents the presence of a photo in the Up, Down, North, South, East, and West directions. For example, if the entry is `110100`, that indicates that there is a valid photo for the Up, Down, and South Directions but no valid photos for the North, East, and West Directions.
+    - `PhotoBitDecimal`: The numerical representation of the lc_PhotoBitBinary string.
 
     Parameters
     ----------
     df : pd.DataFrame
-        A mosquito habitat mapper DataFrame
-    up : str
-        The column name in the land cover DataFrame that contains the url for the upwards photo.
-    down : str
-        The column name in the land cover DataFrame that contains the url for the downwards photo.
-    north : str
-        The column name in the land cover DataFrame that contains the url for the north photo.
-    south : str
-        The column name in the land cover DataFrame that contains the url for the south photo.
-    east : str
-        The column name in the land cover DataFrame that contains the url for the east photo.
-    west : str
-        The column name in the land cover DataFrame that contains the url for the west photo.
+        A land cover DataFrame
+    up : str, default="lc_UpwardPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the upwards photo.
+    down : str, default="lc_DownwardPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the downwards photo.
+    north : str, default="lc_NorthPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the north photo.
+    south : str, default="lc_SouthPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the south photo.
+    east : str, default="lc_EastPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the east photo.
+    west : str, default="lc_WestPhotoUrl"
+        The name of the column in the land cover DataFrame that contains the url for the west photo.
+    photo_count : str, default="lc_PhotoCount"
+        The name of the column that will be storing the PhotoCount flag.
+    rejected_count : str, default="lc_RejectedCount"
+        The name of the column that will be storing the RejectedCount flag.
+    pending_count : str, default="lc_PendingCount"
+        The name of the column that will be storing the PendingCount flag.
+    empty_count : str, default="lc_EmptyCount"
+        The name of the column that will be storing the EmptyCount flag.
+    bit_binary : str, default="lc_PhotoBitBinary"
+        The name of the column that will be storing the PhotoBitBinary flag.
+    bit_decimal : str, default="lc_PhotoBitDecimal"
+        The name of the column that will be storing the PhotoBitDecimal flag.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the photo bit flags. If `inplace=True` it returns None.
     """
 
     def pic_data(*args):
@@ -315,14 +372,17 @@ def photo_bit_flags(df, up, down, north, south, east, west):
             int(valid_photo_bit_mask, 2),
         )
 
+    if not inplace:
+        df = df.copy()
+
     get_photo_data = np.vectorize(pic_data)
     (
-        df["lc_PhotoCount"],
-        df["lc_RejectedCount"],
-        df["lc_PendingCount"],
-        df["lc_EmptyCount"],
-        df["lc_PhotoBitBinary"],
-        df["lc_PhotoBitDecimal"],
+        df[photo_count],
+        df[rejected_count],
+        df[pending_count],
+        df[empty_count],
+        df[bit_binary],
+        df[bit_decimal],
     ) = get_photo_data(
         df[up].to_numpy(),
         df[down].to_numpy(),
@@ -332,28 +392,52 @@ def photo_bit_flags(df, up, down, north, south, east, west):
         df[west].to_numpy(),
     )
 
+    if not inplace:
+        return df
 
-def classification_bit_flags(df, north, south, east, west):
+
+def classification_bit_flags(
+    df,
+    north="lc_NorthClassifications",
+    south="lc_SouthClassifications",
+    east="lc_EastClassifications",
+    west="lc_WestClassifications",
+    classification_count="lc_ClassificationCount",
+    bit_binary="lc_ClassificationBitBinary",
+    bit_decimal="lc_ClassificationBitDecimal",
+    inplace=False,
+):
     """
     Creates the following flags:
-    - `lc_ClassificationCount`: The number of classifications per record.
-    - `lc_BitBinary`: A string that represents the presence of a classification in the North, South, East, and West directions. For example, if the entry is `1101`, that indicates that there is a valid classification for the North, South, and West Directions but no valid classifications for the East Direction.
-    - `lc_BitDecimal`: The number of photos that are pending approval per record.
-
-    This modifies the DataFrame itself.
+    - `ClassificationCount`: The number of classifications per record.
+    - `BitBinary`: A string that represents the presence of a classification in the North, South, East, and West directions. For example, if the entry is `1101`, that indicates that there is a valid classification for the North, South, and West Directions but no valid classifications for the East Direction.
+    - `BitDecimal`: The number of photos that are pending approval per record.
 
     Parameters
     ----------
     df : pd.DataFrame
-        A mosquito habitat mapper DataFrame
-    north : str
-        The column name in the land cover DataFrame that contains the north classification.
-    south : str
-        The column name in the land cover DataFrame that contains the south classification.
-    east : str
-        The column name in the land cover DataFrame that contains the east classification.
-    west : str
-        The column name in the land cover DataFrame that contains the west classification.
+        A land cover DataFrame
+    north : str, default="lc_NorthClassifications"
+        The name of the column in the land cover DataFrame that contains the north classification.
+    south : str, default="lc_SouthClassifications"
+        The name of the column in the land cover DataFrame that contains the south classification.
+    east : str, default="lc_EastClassifications"
+        The name of the column in the land cover DataFrame that contains the east classification.
+    west : str, default="lc_WestClassifications"
+        The name of the column in the land cover DataFrame that contains the west classification.
+    classification_count : str, default="lc_ClassificationCount"
+        The name of the column that will store the ClassificationCount flag.
+    bit_binary : str, default="lc_ClassificationBitBinary"
+        The name of the column that will store the BitBinary flag.
+    bit_decimal : str, default="lc_ClassificationBitDecimal"
+        The name of the column that will store the BitDecimal flag.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the classification bit flags. If `inplace=True` it returns None.
     """
 
     def classification_data(*args):
@@ -371,32 +455,56 @@ def classification_bit_flags(df, north, south, east, west):
             int(classification_bit_mask, 2),
         )
 
+    if not inplace:
+        df = df.copy()
     get_classification_data = np.vectorize(classification_data)
 
     (
-        df["lc_ClassificationCount"],
-        df["lc_ClassificationBitBinary"],
-        df["lc_ClassificationBitDecimal"],
+        df[classification_count],
+        df[bit_binary],
+        df[bit_decimal],
     ) = get_classification_data(
         df[north],
         df[south],
         df[east],
         df[west],
     )
+    if not inplace:
+        return df
 
 
-def completion_scores(df):
+def completion_scores(
+    df,
+    photo_bit_binary="lc_PhotoBitBinary",
+    classification_binary="lc_ClassificationBitBinary",
+    sub_completeness="lc_SubCompletenessScore",
+    completeness="lc_CumulativeCompletenessScore",
+    inplace=False,
+):
     """
     Adds the following completness score flags:
-    - `lc_SubCompletenessScore`: The percentage of valid landcover classifications and photos that are filled out.
-    - `lc_CumulativeCompletenessScore`: The percentage of non null values out of all the columns.
-
-    This modifies the DataFrame itself.
+    - `SubCompletenessScore`: The percentage of valid landcover classifications and photos that are filled out.
+    - `CumulativeCompletenessScore`: The percentage of non null values out of all the columns.
 
     Parameters
     ----------
     df : pd.DataFrame
-        A landcover DataFrame with the [`lc_PhotoBitBinary`](#photo_bit_flags) and [`lc_ClassificationBitBinary`](#classification_bit_flags) flags.
+        A landcover DataFrame with the [`PhotoBitBinary`](#photo_bit_flags) and [`ClassificationBitBinary`](#classification_bit_flags) flags.
+    photo_bit_binary : str, default="lc_PhotoBitBinary"
+        The name of the column that stores the PhotoBitBinary flag.
+    classification_binary : str, default="lc_PhotoBitBinary"
+        The name of the column that stores the ClassificationBitBinary flag.
+    sub_completeness : str, default="lc_PhotoBitBinary"
+        The name of the column that will store the generated SubCompletenessScore flag.
+    completeness : str, default="lc_PhotoBitBinary"
+        The name of the column that will store the generated CompletenessScore flag.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with the completeness score flags. If `inplace=True` it returns None.
     """
 
     def sum_bit_mask(bit_mask="0"):
@@ -405,26 +513,30 @@ def completion_scores(df):
             sum += int(char)
         return sum
 
+    if not inplace:
+        df = df.copy()
+
     scores = {}
     scores["sub_score"] = []
     # Cummulative Completion Score
     scores["cumulative_score"] = round(df.count(1) / len(df.columns), 2)
     # Sub-Score
-    for index in range(len(df)):
-        bit_mask = (
-            df["lc_PhotoBitBinary"][index] + df["lc_ClassificationBitBinary"][index]
-        )
+    for index in df.index:
+        bit_mask = df[photo_bit_binary][index] + df[classification_binary][index]
         sub_score = round(sum_bit_mask(bit_mask=bit_mask), 2)
         sub_score /= len(bit_mask)
         scores["sub_score"].append(sub_score)
 
-    df["lc_SubCompletenessScore"], df["lc_CumulativeCompletenessScore"] = (
+    df[sub_completeness], df[completeness] = (
         scores["sub_score"],
         scores["cumulative_score"],
     )
 
+    if not inplace:
+        return df
 
-def apply_cleanup(lc_df):
+
+def apply_cleanup(lc_df, unpack=True):
     """Applies a full cleanup procedure to the landcover data.
     It follows the following steps:
     - Removes Homogenous Columns
@@ -434,10 +546,14 @@ def apply_cleanup(lc_df):
     - Rounds Columns
     - Standardizes Null Values
 
+    This returns a copy
+
     Parameters
     ----------
     lc_df : pd.DataFrame
         A DataFrame containing **raw** Landcover Data from the API.
+    unpack : bool
+        If True, the Landcover data will expand the classifications into separate columns (results in around 300 columns).
 
     Returns
     -------
@@ -445,12 +561,14 @@ def apply_cleanup(lc_df):
         A DataFrame containing the cleaned Landcover Data
     """
     lc_df = lc_df.copy()
-    remove_homogenous_cols(lc_df)
-    rename_latlon_cols(lc_df)
-    cleanup_column_prefix(lc_df)
-    lc_df = unpack_classifications(lc_df)
-    round_cols(lc_df)
-    standardize_null_vals(lc_df)
+
+    remove_homogenous_cols(lc_df, inplace=True)
+    rename_latlon_cols(lc_df, inplace=True)
+    cleanup_column_prefix(lc_df, inplace=True)
+    if unpack:
+        lc_df = unpack_classifications(lc_df)
+    round_cols(lc_df, inplace=True)
+    standardize_null_vals(lc_df, inplace=True)
     return lc_df
 
 
@@ -460,31 +578,24 @@ def add_flags(lc_df):
     - Classification Bit Flags
     - Completeness Score Flags
 
-    This modifies the DataFrame itself.
+    Returns a copy of the DataFrame
 
     Parameters
     ----------
     lc_df : pd.DataFrame
         A DataFrame containing cleaned up Landcover Data ideally from the [apply_cleanup](#apply_cleanup) method.
-    """
 
-    photo_bit_flags(
-        lc_df,
-        "lc_UpwardPhotoUrl",
-        "lc_DownwardPhotoUrl",
-        "lc_NorthPhotoUrl",
-        "lc_SouthPhotoUrl",
-        "lc_EastPhotoUrl",
-        "lc_WestPhotoUrl",
-    )
-    classification_bit_flags(
-        lc_df,
-        "lc_NorthPhotoUrl",
-        "lc_SouthPhotoUrl",
-        "lc_EastPhotoUrl",
-        "lc_WestPhotoUrl",
-    )
-    completion_scores(lc_df)
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the Land Cover flags.
+    """
+    lc_df = lc_df.copy()
+    photo_bit_flags(lc_df, inplace=True)
+    classification_bit_flags(lc_df, inplace=True)
+    get_main_classifications(lc_df, inplace=True)
+    completion_scores(lc_df, inplace=True)
+    return lc_df
 
 
 def direction_frequency(lc_df, direction_list, bit_binary, entry_type):
@@ -519,7 +630,21 @@ def direction_frequency(lc_df, direction_list, bit_binary, entry_type):
     sns.barplot(data=direction_photos, x="category", y="count", color="lightblue")
 
 
-def diagnostic_plots(lc_df):
+def diagnostic_plots(
+    lc_df,
+    up_url="lc_UpwardPhotoUrl",
+    down_url="lc_DownwardPhotoUrl",
+    north_url="lc_NorthPhotoUrl",
+    south_url="lc_SouthPhotoUrl",
+    east_url="lc_EastPhotoUrl",
+    west_url="lc_WestPhotoUrl",
+    photo_bit="lc_PhotoBitBinary",
+    north_classification="lc_NorthClassifications",
+    south_classification="lc_SouthClassifications",
+    east_classification="lc_EastClassifications",
+    west_classification="lc_WestClassifications",
+    classification_bit="lc_ClassificationBitBinary",
+):
     """
     Generates (but doesn't display) diagnostic plots to gain insight into the current data.
 
@@ -541,26 +666,19 @@ def diagnostic_plots(lc_df):
     )
     direction_frequency(
         lc_df,
-        [
-            "lc_UpwardPhotoUrl",
-            "lc_DownwardPhotoUrl",
-            "lc_NorthPhotoUrl",
-            "lc_SouthPhotoUrl",
-            "lc_EastPhotoUrl",
-            "lc_WestPhotoUrl",
-        ],
-        "lc_PhotoBitBinary",
+        [up_url, down_url, north_url, south_url, east_url, west_url],
+        photo_bit,
         "Photo",
     )
     direction_frequency(
         lc_df,
         [
-            "lc_NorthClassifications",
-            "lc_SouthClassifications",
-            "lc_EastClassifications",
-            "lc_WestClassifications",
+            north_classification,
+            south_classification,
+            east_classification,
+            west_classification,
         ],
-        "lc_ClassificationBitBinary",
+        classification_bit,
         "Classification",
     )
     multiple_bar_graph(
@@ -577,3 +695,173 @@ def diagnostic_plots(lc_df):
     completeness_histogram(
         lc_df, "Land Cover", "lc_SubCompletenessScore", "Sub Completeness"
     )
+
+
+def qa_filter(
+    lc_df,
+    has_classification=False,
+    has_photo=False,
+    has_all_photos=False,
+    has_all_classifications=False,
+):
+    """
+    Can filter a cleaned and flagged mosquito habitat mapper DataFrame based on the following criteria:
+    - `Has Classification`: If the entry has atleast one direction classified
+    - `Has Photo` : If the entry has atleast one photo taken
+    - `Has All Photos` : If the entry has all photos taken (up, down, north, south, east, west)
+    - `Has All Classifications` : If the entry has all directions classified
+
+    Returns a copy of the DataFrame
+
+    Parameters
+    ----------
+    has_classification : bool, default=False
+        If True, only entries with atleast one classification will be included.
+    has_photo : bool, default=False
+        If True, only entries with atleast one photo will be included.
+    has_all_photos : bool, default=False
+        If True, only entries with all photos will be included.
+    has_all_classifications : bool, default=False
+        If True, only entries with all classifications will be included.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame of the applied filters.
+    """
+
+    if has_classification and not has_all_classifications:
+        lc_df = lc_df[lc_df["lc_ClassificationBitDecimal"] > 0]
+    elif has_all_classifications:
+        lc_df = lc_df[lc_df["lc_ClassificationBitDecimal"] == 15]
+    if has_photo and not has_all_photos:
+        lc_df = lc_df[lc_df["lc_PhotoBitDecimal"] > 0]
+    elif has_all_photos:
+        lc_df = lc_df[lc_df["lc_PhotoBitDecimal"] == 63]
+
+    return lc_df
+
+
+def _accumulate_ties(classification_list):
+    classifications = list()
+    i = 0
+    while i < len(classification_list) - 1:
+        if classification_list[i][1] == classification_list[i + 1][1]:
+            classifications.append(classification_list[i][0])
+            classifications.append(classification_list[i + 1][0])
+            i += 1
+        else:
+            break
+
+    output = ", ".join([classification for classification in classifications])
+    if not output:
+        if len(classification_list) != 0:
+            output = classification_list[0][0]
+        else:
+            output = "NA"
+    # TODO replace w regex methods
+    return output, i + 1
+
+
+def _rank_direction(classification_dict, direction_classifications):
+    if pd.isna(direction_classifications):
+        return "NA", "NA"
+    classifications_list = []
+    classifications = direction_classifications.split(";")
+    for classification_data in classifications:
+        percent = extract_classification_percentage(classification_data)
+        classification = extract_classification_name(classification_data)
+        if classification in classification_dict:
+            classification_dict[classification] += percent
+        else:
+            classification_dict[classification] = percent
+        classifications_list.append((classification, percent))
+    classifications_list = sorted(
+        classifications_list, key=lambda x: x[1], reverse=True
+    )
+    if len(classifications_list) < 2:
+        return classifications_list[0][0], "NA"
+
+    primary_classification, i = _accumulate_ties(classifications_list)
+    secondary_classification, temp = _accumulate_ties(classifications_list[i:])
+
+    return primary_classification, secondary_classification
+
+
+def _rank_classifications(*args):
+    classification_dict = {}
+    rank_directions = [
+        classification
+        for arg in args
+        for classification in _rank_direction(classification_dict, arg)
+    ]
+    primary, secondary = ("NA", 0), ("NA", 0)
+    if classification_dict:
+        if len(classification_dict) < 2:
+            primary = (
+                list(classification_dict.keys())[0],
+                list(classification_dict.values())[0],
+            )
+        else:
+            sorted_classifications = sorted(
+                classification_dict.items(), key=lambda x: x[1], reverse=True
+            )
+            primary, i = _accumulate_ties(sorted_classifications)
+            primary = primary, sorted_classifications[0][1]
+            if i < len(sorted_classifications):
+                secondary, temp = _accumulate_ties(sorted_classifications[i:])
+                secondary = secondary, sorted_classifications[i][1]
+    return (
+        *rank_directions,
+        primary[0],
+        secondary[0],
+        primary[1] / len(args),
+        secondary[1] / len(args),
+    )
+
+
+def get_main_classifications(
+    lc_df,
+    north_classification="lc_NorthClassifications",
+    east_classification="lc_EastClassifications",
+    south_classification="lc_SouthClassifications",
+    west_classification="lc_WestClassifications",
+    north_primary="lc_NorthPrimary",
+    north_secondary="lc_NorthSecondary",
+    east_primary="lc_EastPrimary",
+    east_secondary="lc_EastSecondary",
+    south_primary="lc_SouthPrimary",
+    south_secondary="lc_SouthSecondary",
+    west_primary="lc_WestPrimary",
+    west_secondary="lc_WestSecondary",
+    primary_classification="lc_PrimaryClassification",
+    secondary_classification="lc_SecondaryClassification",
+    primary_percentage="lc_PrimaryPercentage",
+    secondary_percentage="lc_SecondaryPercentage",
+    inplace=False,
+):
+    if not inplace:
+        lc_df = lc_df.copy()
+    vectorized_rank = np.vectorize(_rank_classifications)
+    (
+        lc_df[north_primary],
+        lc_df[north_secondary],
+        lc_df[east_primary],
+        lc_df[east_secondary],
+        lc_df[south_primary],
+        lc_df[south_secondary],
+        lc_df[west_primary],
+        lc_df[west_secondary],
+        lc_df[primary_classification],
+        lc_df[secondary_classification],
+        lc_df[primary_percentage],
+        lc_df[secondary_percentage],
+    ) = vectorized_rank(
+        lc_df[north_classification].to_numpy(),
+        lc_df[east_classification].to_numpy(),
+        lc_df[south_classification].to_numpy(),
+        lc_df[west_classification].to_numpy(),
+    )
+
+    if not inplace:
+        return lc_df
