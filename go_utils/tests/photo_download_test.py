@@ -5,12 +5,15 @@ import pytest
 
 from go_utils.download import convert_dates_to_datetime
 
-from go_utils.photo_download import (  # isort: skip
-    download_lc_photos,
-    download_mhm_photos,
-    get_lc_download_targets,
-    get_mhm_download_targets,
+from go_utils.photo_download import (
+    get_globe_photo_id,
     remove_bad_characters,
+    download_photo,
+    _format_param_name,
+    get_mhm_download_targets,
+    get_lc_download_targets,
+    download_mhm_photos,
+    download_lc_photos
 )
 
 out_directory = "test_photos"
@@ -68,13 +71,21 @@ desired_lc_names = [
     "lc_East_-39.9572_-71.0726_2021-01-05_38547_2075768.png",
 ]
 
+@pytest.mark.photodownload
+@pytest.mark.downloadtest
+@pytest.mark.util
+def test_get_globe_photo_id():
+    bad_inputs = [None, "", "malformedURL"]
+    for input in bad_inputs:
+        null_output = get_globe_photo_id(input)
+        assert null_output==None, "None expected for input: "+input+". Instead got: "+null_output
 
 @pytest.mark.photodownload
 @pytest.mark.util
 def test_bad_characters():
-    output = remove_bad_characters('<bad-/test|"\\filename:?>*')
-    assert output == "bad-testfilename"
-
+    assert remove_bad_characters(None) == None, "input: None; expected output: None"
+    assert remove_bad_characters("") == "", "input:''; expected output: ''"
+    assert remove_bad_characters('<bad-/test|"\\filename:?>*') == "bad-testfilename", "input:<bad-/test|\"\\filename:?>*; expected output: 'bad-testfilename'; Actual output"+remove_bad_characters('<bad-/test|"\\filename:?>*')
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
@@ -92,25 +103,21 @@ def test_bad_characters():
         ),
     ],
 )
+
 def test_naming(input_file, func, desired):
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
 
     targets = func(df, "")
-    success = True
     output_filenames = [target[2] for target in targets]
+    assert len(output_filenames) == len(desired), "desired len does not equal output_filenames len"
+
+    # Check set equality of desired/expected and output_filenames
     for filename in desired:
-        if filename not in output_filenames:  # pragma: no cover
-            success = False
-            print(filename)
+        assert filename in output_filenames, filename+" from desired is not in output_filenames."
 
     for filename in output_filenames:
-        if filename not in desired:  # pragma: no cover
-            success = False
-            print(filename)
-
-    assert success
-    assert len(output_filenames) == len(desired)
+        assert filename in output_filenames, filename+" from output_filenames is not in desired."
 
 
 @pytest.fixture(
@@ -124,8 +131,8 @@ def photodownload_setup(request):
     input_file, func = request.param
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
-    yield df, func
-    shutil.rmtree(out_directory)
+    yield df, func #return generated df, and func
+    shutil.rmtree(out_directory) #delete directory tree
 
 
 @pytest.mark.downloadtest

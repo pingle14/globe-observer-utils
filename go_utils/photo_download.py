@@ -15,8 +15,12 @@ def get_globe_photo_id(url):
     url : str
       A url to a GLOBE Observer Image
     """
-    photo_id = re.search(r"(?<=\d\d\d\d\/\d\d\/\d\d\/).*(?=\/)", url).group(0)
-    return photo_id
+    if url!=None:
+        match_obj = re.search(r"(?<=\d\d\d\d\/\d\d\/\d\d\/).*(?=\/)", url)
+        if match_obj:
+            photo_id = match_obj.group(0)
+            return photo_id
+    return None
 
 
 def remove_bad_characters(filename):
@@ -26,14 +30,16 @@ def remove_bad_characters(filename):
     Parameters
     ----------
     filename : str
-      A possible filename
+      A possible filename.
 
     Returns
     -------
     str
         The filename without any erroneous characters
     """
-    return re.sub(r"[<>:?\"/\\|*]", "", filename)
+    if filename!=None:
+        return re.sub(r"[<>:?\"/\\|*]", "", filename)
+    return None
 
 
 def download_photo(url, directory, filename):
@@ -49,11 +55,13 @@ def download_photo(url, directory, filename):
     filename : str
         The name of the photo
     """
-    downloaded_obj = requests.get(url, allow_redirects=True)
-    filename = remove_bad_characters(filename)
-    out_path = os.path.join(directory, filename)
-    with open(out_path, "wb") as file:
-        file.write(downloaded_obj.content)
+    if None in [url, directory, filename]:
+        downloaded_obj = requests.get(url, allow_redirects=True)
+        filename = remove_bad_characters(filename)
+        out_path = os.path.join(directory, filename)
+        with open(out_path, "wb") as file:
+            file.write(downloaded_obj.content)
+
 
 
 def download_all_photos(targets):
@@ -65,16 +73,21 @@ def download_all_photos(targets):
     targets : list of tuple of str
         Contains tuples that store the url, directory, and filename of the desired photos to be downloaded in that order.
     """
-    for target in targets:
-        download_photo(*target)
+    expectedNumParams = 3
+    if targets!=None:
+        for target in targets:
+            if (type(target) is tuple) and len(target) == expectedNumParams:
+                download_photo(*target)
 
 
 def _format_param_name(name):
-    return (
-        "".join(s.capitalize() + " " for s in name.split("_"))
-        .replace("Photo", "")
-        .strip()
-    )
+    if name!=None:
+        return (
+            "".join(s.capitalize() + " " for s in name.split("_"))
+            .replace("Photo", "")
+            .strip()
+        )
+    return None
 
 
 def get_mhm_download_targets(
@@ -146,18 +159,23 @@ def get_mhm_download_targets(
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
         for url in urls:
-            if pd.isna(url) or "https" not in url:
-                continue
-            photo_id = get_globe_photo_id(url)
-
-            classification = genus
-            if pd.isna(classification):
-                classification = "None"
-            elif not pd.isna(species):
-                classification = f"{classification} {species}"
-            name = f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
-            name = remove_bad_characters(name)
-            targets.add((url, directory, name))
+            if pd.isna(url)!=None and "https" in url:
+                photo_id = get_globe_photo_id(url)
+                
+                # Checks photo_id is valid
+                if photo_id!=None and int(photo_id)>=0:
+                    classification = genus
+                    if pd.isna(classification):
+                        classification = "None"
+                    elif not pd.isna(species):
+                        classification = f"{classification} {species}"
+                    name = f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
+                    name = remove_bad_characters(name)
+                    targets.add((url, directory, name))
+                else:
+                    print("Invalid photoId")
+            else:
+                print("Invalid url: "+url)
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
