@@ -15,7 +15,7 @@ def get_globe_photo_id(url):
     url : str
       A url to a GLOBE Observer Image
     """
-    if url!=None:
+    if url is not None:
         match_obj = re.search(r"(?<=\d\d\d\d\/\d\d\/\d\d\/).*(?=\/)", url)
         if match_obj:
             photo_id = match_obj.group(0)
@@ -37,7 +37,7 @@ def remove_bad_characters(filename):
     str
         The filename without any erroneous characters
     """
-    if filename!=None:
+    if filename is not None:
         return re.sub(r"[<>:?\"/\\|*]", "", filename)
     return None
 
@@ -55,13 +55,12 @@ def download_photo(url, directory, filename):
     filename : str
         The name of the photo
     """
-    if None in [url, directory, filename]:
+    if any(x is None for x in [url, directory, filename]):
         downloaded_obj = requests.get(url, allow_redirects=True)
         filename = remove_bad_characters(filename)
         out_path = os.path.join(directory, filename)
         with open(out_path, "wb") as file:
             file.write(downloaded_obj.content)
-
 
 
 def download_all_photos(targets):
@@ -74,20 +73,21 @@ def download_all_photos(targets):
         Contains tuples that store the url, directory, and filename of the desired photos to be downloaded in that order.
     """
     expectedNumParams = 3
-    if targets!=None:
+    if targets is not None:
         for target in targets:
             if (type(target) is tuple) and len(target) == expectedNumParams:
                 download_photo(*target)
 
 
 def _format_param_name(name):
-    if name!=None:
+    if name is not None:
         return (
             "".join(s.capitalize() + " " for s in name.split("_"))
             .replace("Photo", "")
             .strip()
         )
     return None
+
 
 def get_mhm_download_targets(
     mhm_df,
@@ -102,8 +102,8 @@ def get_mhm_download_targets(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
-    exclude_from_name = [],
-    additional_name_stem = ""
+    exclude_from_name=[],
+    additional_name_stem="",
 ):
     """
     Generates mosquito habitat mapper targets to download
@@ -153,7 +153,6 @@ def get_mhm_download_targets(
         mhm_id,
         genus,
         species,
-        exclude_from_name = []
     ):
         if pd.isna(url_entry):
             return
@@ -163,13 +162,13 @@ def get_mhm_download_targets(
 
         def build_name():
             name = "mhm_"
-            if additional_name_stem and additional_name_stem!="":
-                name+=f"{additional_name_stem}_"
+            if additional_name_stem and additional_name_stem != "":
+                name += f"{additional_name_stem}_"
 
             for field in list(name_fields):
-                if exclude_from_name==None or field not in exclude_from_name:
-                    name+=f"{name_fields[field]}_"
-            name+=f"{photo_id}.png"
+                if exclude_from_name is None or field not in exclude_from_name:
+                    name += f"{name_fields[field]}_"
+            name += f"{photo_id}.png"
             name = remove_bad_characters(name)
             return name
 
@@ -178,7 +177,7 @@ def get_mhm_download_targets(
                 photo_id = get_globe_photo_id(url)
 
                 # Checks photo_id is valid
-                if photo_id!=None and int(photo_id)>=0:
+                if photo_id is not None and int(photo_id) >= 0:
                     classification = genus
                     if pd.isna(classification):
                         classification = "None"
@@ -186,16 +185,18 @@ def get_mhm_download_targets(
                         classification = f"{classification} {species}"
 
                     name_fields = {
-                        "url_type":url_type,
-                        "watersource":watersource,
-                        "latitude":round(latitude,5),
-                        "longitude":round(longitude,5),
-                        "date_str":date_str,
-                        "mhm_id":mhm_id,
-                        "classification":classification
+                        "url_type": url_type,
+                        "watersource": watersource,
+                        "latitude": round(latitude, 5),
+                        "longitude": round(longitude, 5),
+                        "date_str": date_str,
+                        "mhm_id": mhm_id,
+                        "classification": classification,
                     }
 
-                    name = build_name()#f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
+                    name = (
+                        build_name()
+                    )  # f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
 
                     targets.add((url, directory, name))
                 else:
@@ -234,8 +235,8 @@ def download_mhm_photos(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
-    exclude_from_name = [],
-    additional_name_stem = ""
+    exclude_from_name=[],
+    additional_name_stem="",
 ):
     """
     Downloads mosquito habitat mapper photos
@@ -292,8 +293,8 @@ def get_lc_download_targets(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
-    exclude_from_name = [],
-    additional_name_stem = ""
+    exclude_from_name=[],
+    additional_name_stem="",
 ):
     """
     Generates landcover targets to download
@@ -340,30 +341,32 @@ def get_lc_download_targets(
 
             def build_name():
                 name = "lc_"
-                if additional_name_stem and additional_name_stem!="":
-                    name+=f"{additional_name_stem}_"
+                if additional_name_stem and additional_name_stem != "":
+                    name += f"{additional_name_stem}_"
 
                 for field in list(name_fields):
-                    if exclude_from_name==None or field not in exclude_from_name:
-                        name+=f"{name_fields[field]}_"
+                    if exclude_from_name is None or field not in exclude_from_name:
+                        name += f"{name_fields[field]}_"
 
                 name += f"{photo_id}.png"
                 name = remove_bad_characters(name)
                 return name
 
             name_fields = {
-                "direction":direction,
-                "latitude":round(latitude,5),
-                "longitude":round(longitude,5),
-                "date_str":date_str,
-                "lc_id":lc_id,
+                "direction": direction,
+                "latitude": round(latitude, 5),
+                "longitude": round(longitude, 5),
+                "date_str": date_str,
+                "lc_id": lc_id,
             }
 
-            if photo_id!=None and int(photo_id)>=0:
-                name = build_name() #f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
+            if photo_id is not None and int(photo_id) >= 0:
+                name = (
+                    build_name()
+                )  # f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
                 targets.add((url, directory, name))
             else:
-                print("Invalid photoID: "+photo_id)
+                print("Invalid photoID: " + photo_id)
         else:
             print("Invalid URL")
 
@@ -396,8 +399,8 @@ def download_lc_photos(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
-    exclude_from_name = [],
-    additional_name_stem = ""
+    exclude_from_name=[],
+    additional_name_stem="",
 ):
     """
     Downloads Landcover photos for landcover data.

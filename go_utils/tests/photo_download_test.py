@@ -1,4 +1,5 @@
 import shutil
+import re
 
 import pandas as pd
 import pytest
@@ -8,16 +9,14 @@ from go_utils.download import convert_dates_to_datetime
 from go_utils.photo_download import (
     get_globe_photo_id,
     remove_bad_characters,
-    download_photo,
-    _format_param_name,
     get_mhm_download_targets,
     get_lc_download_targets,
     download_mhm_photos,
-    download_lc_photos
+    download_lc_photos,
 )
 
 out_directory = "test_photos"
-desired_mhm_names = [
+full_mhm_names = [
     "mhm_Larvae_adult mosquito trap_-22.9582_-43.1994_2021-01-05_26415_Aedes incerta_2076283.png",
     "mhm_Watersource_adult mosquito trap_-22.9582_-43.1994_2021-01-05_26415_Aedes incerta_2076282.png",
     "mhm_Watersource_adult mosquito trap_-22.9582_-43.1994_2021-01-05_26416_Aedes incerta_2076285.png",
@@ -43,7 +42,7 @@ desired_mhm_names = [
     "mhm_Larvae_ditch_9.1515_7.3363_2021-01-23_26456_None_2096260.png",
 ]
 
-desired_lc_names = [
+full_lc_names = [
     "lc_Down_39.1857_-86.7782_2021-01-01_38513_2072274.png",
     "lc_East_39.1857_-86.7782_2021-01-01_38513_2072270.png",
     "lc_Up_39.1857_-86.7782_2021-01-01_38513_2072273.png",
@@ -71,6 +70,7 @@ desired_lc_names = [
     "lc_East_-39.9572_-71.0726_2021-01-05_38547_2075768.png",
 ]
 
+
 @pytest.mark.photodownload
 @pytest.mark.downloadtest
 @pytest.mark.util
@@ -78,46 +78,160 @@ def test_get_globe_photo_id():
     bad_inputs = [None, "", "malformedURL"]
     for input in bad_inputs:
         null_output = get_globe_photo_id(input)
-        assert null_output==None, "None expected for input: "+input+". Instead got: "+null_output
+        assert null_output is None, (
+            "None expected for input: " + input + ". Instead got: " + null_output
+        )
+
 
 @pytest.mark.photodownload
 @pytest.mark.util
 def test_bad_characters():
-    assert remove_bad_characters(None) == None, "input: None; expected output: None"
+    assert remove_bad_characters(None) is None, "input: None; expected output: None"
     assert remove_bad_characters("") == "", "input:''; expected output: ''"
-    assert remove_bad_characters('<bad-/test|"\\filename:?>*') == "bad-testfilename", "input:<bad-/test|\"\\filename:?>*; expected output: 'bad-testfilename'; Actual output"+remove_bad_characters('<bad-/test|"\\filename:?>*')
+    assert remove_bad_characters('<bad-/test|"\\filename:?>*') == "bad-testfilename", (
+        "input:<bad-/test|\"\\filename:?>*; expected output: 'bad-testfilename'; Actual output"
+        + remove_bad_characters('<bad-/test|"\\filename:?>*')
+    )
+
+
+mhm_name_fields = [
+    "url_type",
+    "watersource",
+    "latitude",
+    "longitude",
+    "date_str",
+    "mhm_id",
+    "classification",
+]
+lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
+
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, desired",
+    "input_file, func, excluded_fields, additional_info, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            desired_mhm_names,
+            [],
+            "",
+            full_mhm_names,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            desired_lc_names,
+            [],
+            "",
+            full_lc_names,
         ),
     ],
 )
-
-def test_naming(input_file, func, desired):
+def test_all_field_naming(input_file, func, excluded_fields, additional_info, desired):
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
 
-    targets = func(df, "")
+    targets = func(
+        df,
+        directory="",
+        exclude_from_name=excluded_fields,
+        additional_name_stem=additional_info,
+    )
     output_filenames = [target[2] for target in targets]
-    assert len(output_filenames) == len(desired), "desired len does not equal output_filenames len"
+    assert len(output_filenames) == len(
+        desired
+    ), "desired len does not equal output_filenames len"
 
     # Check set equality of desired/expected and output_filenames
     for filename in desired:
-        assert filename in output_filenames, filename+" from desired is not in output_filenames."
+        assert filename in output_filenames, (
+            filename + " from desired is not in output_filenames."
+        )
 
     for filename in output_filenames:
-        assert filename in output_filenames, filename+" from output_filenames is not in desired."
+        assert filename in output_filenames, (
+            filename + " from output_filenames is not in desired."
+        )
+
+
+@pytest.mark.photodownload
+@pytest.mark.parametrize(
+    "input_file, func, excluded_fields, desired",
+    [
+        (
+            "go_utils/tests/sample_data/mhm_small.csv",
+            get_mhm_download_targets,
+            mhm_name_fields,
+            [(re.sub(r"mhm\_.*\_", "mhm_", x)) for x in full_mhm_names],
+        ),
+        (
+            "go_utils/tests/sample_data/lc_small.csv",
+            get_lc_download_targets,
+            lc_name_fields,
+            [(re.sub(r"lc\_.*\_", "lc_", x)) for x in full_lc_names],
+        ),
+    ],
+)
+def test_no_field_naming(input_file, func, excluded_fields, desired):
+    test_all_field_naming(input_file, func, excluded_fields, "", desired)
+
+
+@pytest.mark.photodownload
+@pytest.mark.parametrize(
+    "input_file, func, excluded_fields, additional_info, desired",
+    [
+        (
+            "go_utils/tests/sample_data/mhm_small.csv",
+            get_mhm_download_targets,
+            mhm_name_fields,
+            "ADDITIONAL",
+            [(re.sub(r"mhm\_.*\_", "mhm_ADDITIONAL_", x)) for x in full_mhm_names],
+        ),
+        (
+            "go_utils/tests/sample_data/lc_small.csv",
+            get_lc_download_targets,
+            lc_name_fields,
+            "ADDITIONAL",
+            [(re.sub(r"lc\_.*\_", "lc_ADDITIONAL_", x)) for x in full_lc_names],
+        ),
+    ],
+)
+def test_additional_field_naming(
+    input_file, func, excluded_fields, additional_info, desired
+):
+    test_all_field_naming(**locals())
+
+
+#
+@pytest.mark.photodownload
+@pytest.mark.parametrize(
+    "input_file, func, excluded_fields, additional_info, desired",
+    [
+        (
+            "go_utils/tests/sample_data/mhm_small.csv",
+            get_mhm_download_targets,
+            mhm_name_fields[2:4],
+            "",
+            [
+                (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
+                for x in full_mhm_names
+            ],
+        ),
+        (
+            "go_utils/tests/sample_data/lc_small.csv",
+            get_lc_download_targets,
+            lc_name_fields[1:3],
+            "",
+            [
+                (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
+                for x in full_lc_names
+            ],
+        ),
+    ],
+)
+def test_no_location_field_naming(
+    input_file, func, excluded_fields, additional_info, desired
+):
+    test_all_field_naming(**locals())
 
 
 @pytest.fixture(
@@ -131,8 +245,8 @@ def photodownload_setup(request):
     input_file, func = request.param
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
-    yield df, func #return generated df, and func
-    shutil.rmtree(out_directory) #delete directory tree
+    yield df, func  # return generated df, and func
+    shutil.rmtree(out_directory)  # delete directory tree
 
 
 @pytest.mark.downloadtest
