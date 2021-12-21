@@ -55,12 +55,22 @@ def download_photo(url, directory, filename):
     filename : str
         The name of the photo
     """
-    if any(x is None for x in [url, directory, filename]):
+    if any(x is not None for x in [url, directory, filename]):
         downloaded_obj = requests.get(url, allow_redirects=True)
         filename = remove_bad_characters(filename)
         out_path = os.path.join(directory, filename)
         with open(out_path, "wb") as file:
             file.write(downloaded_obj.content)
+    else:
+        print(
+            "Either url ("
+            + url
+            + "), directory ("
+            + directory
+            + "), or filename ("
+            + filename
+            + ") was None."
+        )
 
 
 def download_all_photos(targets):
@@ -77,6 +87,10 @@ def download_all_photos(targets):
         for target in targets:
             if (type(target) is tuple) and len(target) == expectedNumParams:
                 download_photo(*target)
+            else:
+                print("ERR: Target incorrectly formatted: " + target)
+    else:
+        print("ERR: Targets was none")
 
 
 def _format_param_name(name):
@@ -167,6 +181,7 @@ def get_mhm_download_targets(
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
 
+        # f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
         def build_name():
             name = "mhm_"
             if additional_name_stem and additional_name_stem != "":
@@ -201,10 +216,7 @@ def get_mhm_download_targets(
                         "classification": classification,
                     }
 
-                    name = (
-                        build_name()
-                    )  # f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
-
+                    name = build_name()
                     targets.add((url, directory, name))
                 else:
                     print("Invalid photoId. Ignoring Photo")
@@ -275,11 +287,11 @@ def download_mhm_photos(
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
     exclude_from_name : list of str, default=[]
-        A list of coloumn names to exclude from the downloaded photo names.
-        Accepted Excluded Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+        A list of coloumn names to exclude from the downloaded photo names
+        Accepted Excluded Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
-        NOTE: Name format is as follows: "mhm_{additional_name_stem}_{direction}_{latitude}_{longitude}_{date_str}_{lc_id}_{photo_id}.png"
+        NOTE: Name format is as follows: "mhm_{additional_name_stem}_{url_type}_{watersource}_{latitude}_{longitude}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
             Excluded name fields will not appear in the name
 
     Returns
@@ -339,6 +351,13 @@ def get_lc_download_targets(
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
+    exclude_from_name : list of str, default=[]
+        A list of coloumn names to exclude from the downloaded photo names.
+        Accepted Excluded Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+        NOTE: Name format is as follows: "lc_{additional_name_stem}_{direction}_{latitude}_{longitude}_{date_str}_{lc_id}_{photo_id}.png"
+            Excluded name fields will not appear in the name
 
     Returns
     -------
@@ -353,6 +372,7 @@ def get_lc_download_targets(
             date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
             photo_id = get_globe_photo_id(url)
 
+            # f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
             def build_name():
                 name = "lc_"
                 if additional_name_stem and additional_name_stem != "":
@@ -375,14 +395,12 @@ def get_lc_download_targets(
             }
 
             if photo_id is not None and int(photo_id) >= 0:
-                name = (
-                    build_name()
-                )  # f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
+                name = build_name()
                 targets.add((url, directory, name))
             else:
                 print("Invalid photoID: " + photo_id)
         else:
-            print("Invalid URL")
+            print("Invalid URL: " + str(url))
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -445,6 +463,13 @@ def download_lc_photos(
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
+    exclude_from_name : list of str, default=[]
+        A list of coloumn names to exclude from the downloaded photo names.
+        Accepted Excluded Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+        NOTE: Name format is as follows: "lc_{additional_name_stem}_{direction}_{latitude}_{longitude}_{date_str}_{lc_id}_{photo_id}.png"
+            Excluded name fields will not appear in the name
 
     Returns
     -------

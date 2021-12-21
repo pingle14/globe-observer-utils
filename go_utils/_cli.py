@@ -171,22 +171,57 @@ def mhm_photo_download():
     )
     parser.add_argument("input", help="Input Directory of the command")
     parser.add_argument("out", help="Output Directory of the command")
-    parser.add_argument(
+
+    photo_group = parser.add_argument_group(
+        "Photo Types", "Includes: larvae, watersource, abdomen, all"
+    )
+    photo_group.add_argument(
         "--larvae", "-l", help="Include Larvae Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--watersource", "-w", help="Include Watersource Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--abdomen", "-ab", help="Include Abdomen Photos", action="store_true"
     )
 
-    parser.add_argument(
+    photo_group.add_argument(
         "--all",
         "-a",
         help="Include all of the flags",
         action="store_true",
     )
+
+    name_group = parser.add_argument_group(
+        "Photo Naming", "Allows naming customization"
+    )
+    name_group.add_argument(
+        "--name_additional",
+        "-i",
+        help="Include additonal info in photo names.",
+        type=str,
+        action="store",
+    )
+
+    mhm_name_fields = [
+        "url_type",
+        "watersource",
+        "latitude",
+        "longitude",
+        "date_str",
+        "mhm_id",
+        "classification",
+    ]
+    name_group.add_argument(
+        "--nargs_exclude",
+        "-x",
+        nargs="+",
+        help="Exclude these fields from photo names.",
+        choices=mhm_name_fields,
+        type=str,
+        action="store",
+    )
+
     args = parser.parse_args()
 
     download_args = {}
@@ -201,9 +236,20 @@ def mhm_photo_download():
     convert_dates_to_datetime(df)
 
     if args.all:
-        download_mhm_photos(df, args.out)
+        download_mhm_photos(
+            df,
+            args.out,
+            exclude_from_name=args.nargs_exclude,
+            additional_name_stem=args.name_additional,
+        )
     else:
-        download_mhm_photos(df, args.out, **download_args)
+        download_mhm_photos(
+            df,
+            args.out,
+            **download_args,
+            exclude_from_name=args.nargs_exclude,
+            additional_name_stem=args.name_additional
+        )
 
 
 def lc_photo_download():
@@ -213,23 +259,53 @@ def lc_photo_download():
     parser.add_argument("input", help="Input Directory of the command")
     parser.add_argument("out", help="Output Directory of the command")
 
-    parser.add_argument("--up", "-u", help="Include Upward Photos", action="store_true")
-    parser.add_argument(
+    photo_group = parser.add_argument_group(
+        "Photo Types", "Includes: up, down, north, south, east, west"
+    )
+    photo_group.add_argument(
+        "--up", "-u", help="Include Upward Photos", action="store_true"
+    )
+    photo_group.add_argument(
         "--down", "-d", help="Include Downward Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--north", "-n", help="Include Northern Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--south", "-s", help="Include Southern Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--east", "-e", help="Include Eastern Photos", action="store_true"
     )
-    parser.add_argument(
+    photo_group.add_argument(
         "--west", "-w", help="Include Western Photos", action="store_true"
     )
-    parser.add_argument("--all", "-a", help="Include All Photos", action="store_true")
+    photo_group.add_argument(
+        "--all", "-a", help="Include All Photos", action="store_true"
+    )
+
+    name_group = parser.add_argument_group(
+        "Photo Naming", "Allows naming customization"
+    )
+    name_group.add_argument(
+        "--name_additional",
+        "-i",
+        help="Include additonal info in photo names.",
+        type=str,
+        action="store",
+    )
+
+    lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
+    name_group.add_argument(
+        "--nargs_exclude",
+        "-x",
+        nargs="+",
+        help="Exclude these fields from photo names.",
+        choices=lc_name_fields,
+        type=str,
+        action="store",
+    )
+
     args = parser.parse_args()
 
     download_args = {}
@@ -250,6 +326,17 @@ def lc_photo_download():
     convert_dates_to_datetime(df)
 
     if args.all:
-        download_lc_photos(df, args.out)
+        download_lc_photos(
+            df,
+            args.out,
+            exclude_from_name=args.nargs_exclude,
+            additional_name_stem=args.name_additional,
+        )
     else:
-        download_lc_photos(df, args.out, **download_args)
+        download_lc_photos(
+            df,
+            args.out,
+            **download_args,
+            exclude_from_name=args.nargs_exclude,
+            additional_name_stem=args.name_additional
+        )
