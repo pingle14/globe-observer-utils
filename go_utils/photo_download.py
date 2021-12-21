@@ -89,7 +89,6 @@ def _format_param_name(name):
         )
     return None
 
-
 def get_mhm_download_targets(
     mhm_df,
     directory,
@@ -103,6 +102,8 @@ def get_mhm_download_targets(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
+    exclude_from_name = [],
+    additional_name_stem = ""
 ):
     """
     Generates mosquito habitat mapper targets to download
@@ -152,16 +153,30 @@ def get_mhm_download_targets(
         mhm_id,
         genus,
         species,
+        exclude_from_name = []
     ):
         if pd.isna(url_entry):
             return
 
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
+
+        def build_name():
+            name = "mhm_"
+            if additional_name_stem and additional_name_stem!="":
+                name+=f"{additional_name_stem}_"
+
+            for field in list(name_fields):
+                if exclude_from_name==None or field not in exclude_from_name:
+                    name+=f"{name_fields[field]}_"
+            name+=f"{photo_id}.png"
+            name = remove_bad_characters(name)
+            return name
+
         for url in urls:
-            if pd.isna(url)!=None and "https" in url:
+            if not pd.isna(url) and "https" in url:
                 photo_id = get_globe_photo_id(url)
-                
+
                 # Checks photo_id is valid
                 if photo_id!=None and int(photo_id)>=0:
                     classification = genus
@@ -169,13 +184,24 @@ def get_mhm_download_targets(
                         classification = "None"
                     elif not pd.isna(species):
                         classification = f"{classification} {species}"
-                    name = f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
-                    name = remove_bad_characters(name)
+
+                    name_fields = {
+                        "url_type":url_type,
+                        "watersource":watersource,
+                        "latitude":round(latitude,5),
+                        "longitude":round(longitude,5),
+                        "date_str":date_str,
+                        "mhm_id":mhm_id,
+                        "classification":classification
+                    }
+
+                    name = build_name()#f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
+
                     targets.add((url, directory, name))
                 else:
-                    print("Invalid photoId")
+                    print("Invalid photoId. Ignoring Photo")
             else:
-                print("Invalid url: "+url)
+                print("Invalid url. Ignoring Photo URL")
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -208,6 +234,8 @@ def download_mhm_photos(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
+    exclude_from_name = [],
+    additional_name_stem = ""
 ):
     """
     Downloads mosquito habitat mapper photos
@@ -264,6 +292,8 @@ def get_lc_download_targets(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
+    exclude_from_name = [],
+    additional_name_stem = ""
 ):
     """
     Generates landcover targets to download
@@ -304,15 +334,38 @@ def get_lc_download_targets(
     targets = set()
 
     def get_photo_args(url, latitude, longitude, direction, date, lc_id):
-        if pd.isna(url) or "https" not in url:
-            return
+        if not pd.isna(url) and "https" in url:
+            date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
+            photo_id = get_globe_photo_id(url)
 
-        date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
-        photo_id = get_globe_photo_id(url)
+            def build_name():
+                name = "lc_"
+                if additional_name_stem and additional_name_stem!="":
+                    name+=f"{additional_name_stem}_"
 
-        name = f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
-        name = remove_bad_characters(name)
-        targets.add((url, directory, name))
+                for field in list(name_fields):
+                    if exclude_from_name==None or field not in exclude_from_name:
+                        name+=f"{name_fields[field]}_"
+
+                name += f"{photo_id}.png"
+                name = remove_bad_characters(name)
+                return name
+
+            name_fields = {
+                "direction":direction,
+                "latitude":round(latitude,5),
+                "longitude":round(longitude,5),
+                "date_str":date_str,
+                "lc_id":lc_id,
+            }
+
+            if photo_id!=None and int(photo_id)>=0:
+                name = build_name() #f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
+                targets.add((url, directory, name))
+            else:
+                print("Invalid photoID: "+photo_id)
+        else:
+            print("Invalid URL")
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -343,6 +396,8 @@ def download_lc_photos(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
+    exclude_from_name = [],
+    additional_name_stem = ""
 ):
     """
     Downloads Landcover photos for landcover data.
