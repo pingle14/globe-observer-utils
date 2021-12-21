@@ -103,6 +103,7 @@ mhm_name_fields = [
     "mhm_id",
     "classification",
 ]
+
 lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
 
 

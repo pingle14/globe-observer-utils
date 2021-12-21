@@ -134,6 +134,13 @@ def get_mhm_download_targets(
         The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
+    exclude_from_name : list of str, default=[]
+        A list of coloumn names to exclude from the downloaded photo names
+        Accepted Excluded Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+        NOTE: Name format is as follows: "mhm_{additional_name_stem}_{url_type}_{watersource}_{latitude}_{longitude}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
+            Excluded name fields will not appear in the name
 
     Returns
     -------
@@ -267,6 +274,13 @@ def download_mhm_photos(
         The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
+    exclude_from_name : list of str, default=[]
+        A list of coloumn names to exclude from the downloaded photo names.
+        Accepted Excluded Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+        NOTE: Name format is as follows: "mhm_{additional_name_stem}_{direction}_{latitude}_{longitude}_{date_str}_{lc_id}_{photo_id}.png"
+            Excluded name fields will not appear in the name
 
     Returns
     -------
