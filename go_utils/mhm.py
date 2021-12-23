@@ -1,18 +1,22 @@
 import math
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import re
 
-from go_utils.cleanup import (
-    replace_column_prefix,
+from go_utils.cleanup import (  # isort: skip
     rename_latlon_cols,
+    replace_column_prefix,
     round_cols,
     standardize_null_vals,
 )
 
-from go_utils.plot import plot_int_distribution, completeness_histogram, plot_freq_bar
-
+from go_utils.plot import (  # isort: skip
+    completeness_histogram,
+    plot_freq_bar,
+    plot_int_distribution,
+)
 
 __doc__ = r"""
 

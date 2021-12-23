@@ -1,9 +1,11 @@
-import pytest
 import json
+
 import numpy as np
+import pytest
+from test_data import globe_down_json, sample_lc_json, sample_mhm_json
+
 from go_utils.download import get_api_data, parse_api_data
 from go_utils.geoenrich import get_country_api_data
-from test_data import sample_lc_json, sample_mhm_json, globe_down_json
 
 globe_test_data = [sample_lc_json, sample_mhm_json]
 protocol_prefixes = [("land_covers", "lc"), ("mosquito_habitat_mapper", "mhm")]

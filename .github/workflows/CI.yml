@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
     name: Test - ${{ matrix.os }}, ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -43,48 +43,3 @@ jobs:
         lc-download -s "2017-06-01" -e "2021-05-31" -c "United States" -o LC_Country_Test.csv
         mhm-photo-download go_utils/tests/sample_data/mhm_small.csv test_photos -a
         lc-photo-download go_utils/tests/sample_data/lc_small.csv test_photos -a
-        
-  format:
-    name: Format
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Check formatting
-      run: |
-        pip install black
-        black --check --diff ./
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Run Flake8 Linter
-      run: |
-        pip install flake8
-        flake8
-  docs:
-    name: Build Docs
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Setup Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Generate Docs
-      run: |
-        pip install -e .
-        pip install pdoc
-        pdoc --t doc_template --docformat numpy -o globe-observer-utils-docs go_utils/.
-    - uses: actions/upload-artifact@v2
-      with:
-        name: docs-build
-        path: globe-observer-utils-docs/

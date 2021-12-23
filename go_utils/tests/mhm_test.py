@@ -1,17 +1,18 @@
 import numpy as np
 import pandas as pd
 import pytest
-from go_utils.mhm import (
-    larvae_to_num,
-    has_watersource_flag,
-    has_genus_flag,
-    is_container_flag,
-    infectious_genus_flag,
-    photo_bit_flags,
-    completion_score_flag,
-    qa_filter,
-    apply_cleanup,
+
+from go_utils.mhm import (  # isort: skip
     add_flags,
+    apply_cleanup,
+    completion_score_flag,
+    has_genus_flag,
+    has_watersource_flag,
+    infectious_genus_flag,
+    is_container_flag,
+    larvae_to_num,
+    photo_bit_flags,
+    qa_filter,
 )
 
 

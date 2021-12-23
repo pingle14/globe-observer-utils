@@ -2,19 +2,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from go_utils.lc import (
-    extract_classification_name,
-    extract_classification_percentage,
-    unpack_classifications,
-    photo_bit_flags,
+from go_utils.lc import (  # isort: skip
+    add_flags,
+    apply_cleanup,
     classification_bit_flags,
     completion_scores,
-    qa_filter,
-    apply_cleanup,
-    add_flags,
+    extract_classification_name,
+    extract_classification_percentage,
     get_main_classifications,
+    photo_bit_flags,
+    qa_filter,
+    unpack_classifications,
 )
-
 
 test_classification = "60% MUC 02 (b) [Trees, Closely Spaced, Deciduous - Broad Leaved]"
 

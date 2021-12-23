@@ -1,11 +1,12 @@
 from datetime import datetime
-import numpy as np
 
+import numpy as np
 from arcgis.features import GeoAccessor
 from arcgis.gis import GIS
 
 from go_utils.download import convert_dates_to_datetime, default_data_clean
-from go_utils.constants import (
+
+from go_utils.constants import (  # isort: skip
     mosquito_protocol,
     landcover_protocol,
     start_date,
