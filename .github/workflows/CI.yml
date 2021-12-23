@@ -21,6 +21,7 @@ jobs:
     - name: Build
       run: | 
         pip install --upgrade build
+        pip install --upgrade wheel
         python -m build
     - name: Run Pytest
       run: |

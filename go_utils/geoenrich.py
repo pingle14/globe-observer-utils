@@ -36,7 +36,7 @@ def get_country_api_data(
     """
 
     item_id_dict = {
-        "mosquito_habitat_mapper": "4e8bdb70b3d6424b8831e9cc621cf3b6",
+        "mosquito_habitat_mapper": "8bc5b0ac24d3474e9ab6ce2bfb4f37fe",
         "land_covers": "c68acbfc68db4409b495fd4636646aa6",
     }
 
@@ -48,28 +48,17 @@ def get_country_api_data(
     gis = GIS()
     item = gis.content.get(itemid=item_id_dict[protocol])
     df = GeoAccessor.from_layer(item.layers[0])
-    df.drop(["SHAPE"], axis=1, inplace=True)
+
+    if "SHAPE" in df:
+        df.drop(["SHAPE"], axis=1, inplace=True)
 
     # Due to the size of the mhm column names, ArcGIS truncates the names so it must be renamed in this step.
     if protocol == "mosquito_habitat_mapper":
 
         mhm_rename_dict = {
-            "mosquitohabitatmapperAbdomenClo": "mosquitohabitatmapperAbdomenCloseupPhotoUrls",
-            "mosquitohabitatmapperBreedingGr": "mosquitohabitatmapperBreedingGroundEliminated",
-            "mosquitohabitatmapperLarvaFullB": "mosquitohabitatmapperLarvaFullBodyPhotoUrls",
-            "mosquitohabitatmapperLarvaeCoun": "mosquitohabitatmapperLarvaeCount",
-            "mosquitohabitatmapperLastIdenti": "mosquitohabitatmapperLastIdentifyStage",
-            "mosquitohabitatmapperMeasurem_1": "mosquitohabitatmapperMeasurementLatitude",
-            "mosquitohabitatmapperMeasurem_2": "mosquitohabitatmapperMeasurementLongitude",
-            "mosquitohabitatmapperMeasuremen": "mosquitohabitatmapperMeasurementElevation",
-            "mosquitohabitatmapperMosquitoAd": "mosquitohabitatmapperMosquitoAdults",
-            "mosquitohabitatmapperMosquitoEg": "mosquitohabitatmapperMosquitoEggs",
-            "mosquitohabitatmapperMosquitoHa": "mosquitohabitatmapperMosquitoHabitatMapperId",
-            "mosquitohabitatmapperMosquitoPu": " mosquitohabitatmapperMosquitoPupae",
-            "mosquitohabitatmapperMosquito_1": "mosquitohabitatmapperMosquitoEggCount",
-            "mosquitohabitatmapperWaterSou_1": "mosquitohabitatmapperWaterSourcePhotoUrls",
-            "mosquitohabitatmapperWaterSou_2": "mosquitohabitatmapperWaterSourceType",
-            "mosquitohabitatmapperWaterSourc": "mosquitohabitatmapperWaterSource",
+            col: f"mosquitohabitatmapper{col}"
+            for col in df.columns
+            if col[0].isupper() and col != "COUNTRY"
         }
         df.rename(
             mhm_rename_dict,

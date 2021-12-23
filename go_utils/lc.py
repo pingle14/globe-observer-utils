@@ -250,33 +250,25 @@ def unpack_classifications(
         for classification in classifications
     }
     overall_columns = set()
+    direction_cols = set()
     for key, values in land_type_columns_to_add.items():
         direction_name = key.replace("Classifications", "_")
         overall = re.sub(
             r"(north|south|east|west).*", "Overall_", key, flags=re.IGNORECASE
         )
         for value in values:
-            lc_df[direction_name + value] = 0.0
-            lc_df[overall + value] = 0.0
+            direction_cols.add(direction_name + value)
             overall_columns.add(overall + value)
-    direction_data_cols = sorted(
-        [
-            name
-            for name in lc_df.columns
-            if any(
-                direction in name.lower()
-                for direction in (
-                    "downward",
-                    "upward",
-                    "west",
-                    "east",
-                    "north",
-                    "south",
-                    "overall",
-                )
-            )
-        ]
+
+    direction_data_cols = sorted(list(overall_columns) + list(direction_cols))
+
+    # Creates a blank DataFrame and concats it to the original to avoid iteratively growing the LC DataFrame
+    blank_df = pd.DataFrame(
+        np.zeros((len(lc_df), len(direction_data_cols))), columns=direction_data_cols
     )
+
+    lc_df = pd.concat([lc_df, blank_df], axis=1)
+
     lc_df = _move_cols(lc_df, cols_to_move=direction_data_cols, ref_col=ref_col)
     lc_df = lc_df.apply(set_directions, axis=1)
     for column in overall_columns:

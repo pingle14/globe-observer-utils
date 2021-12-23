@@ -17,7 +17,7 @@ def parse_api_data(response_json):
     # Expand the 'data' column by listing the contents and passing as a new dataframe
     df = pd.concat([df, pd.DataFrame(list(df["data"]))], axis=1)
     # Drop the previously nested data column
-    df = df.drop("data", 1)
+    df = df.drop(labels="data", axis=1)
 
     # Display the dataframe
     return df
