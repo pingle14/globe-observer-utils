@@ -2,7 +2,12 @@ import pandas as pd
 import requests
 import logging
 
-from go_utils.info import start_date, end_date
+from go_utils.constants import (
+    mosquito_protocol,
+    landcover_protocol,
+    start_date,
+    end_date,
+)
 import go_utils.mhm as mhm
 import go_utils.lc as lc
 
@@ -98,7 +103,7 @@ def convert_dates_to_datetime(df):
 
 
 def default_data_clean(df, protocol):
-    module_mapper = {"mosquito_habitat_mapper": mhm, "land_covers": lc}
+    module_mapper = {mosquito_protocol: mhm, landcover_protocol: lc}
     if protocol in module_mapper:
         df = module_mapper[protocol].apply_cleanup(df)
         df = module_mapper[protocol].add_flags(df)

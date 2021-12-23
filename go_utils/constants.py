@@ -4,6 +4,9 @@ from datetime import datetime
 start_date = "2017-05-31"
 end_date = datetime.now().strftime("%Y-%m-%d")
 
+mosquito_protocol = "mosquito_habitat_mapper"
+landcover_protocol = "land_covers"
+
 region_dict = {
     "Africa": [
         "Benin",
@@ -139,8 +142,8 @@ region_dict = {
 }
 
 abbreviation_dict = {
-    "mosquito_habitat_mapper": "mhm",
-    "land_covers": "lc",
+    mosquito_protocol: "mhm",
+    landcover_protocol: "lc",
 }
 
 __doc__ = """
@@ -148,6 +151,8 @@ Useful stored values for GLOBE Observer scripts
 
 Stored Values
 -------------
+- mosquito_protocol: the string used in the GLOBE API for the Mosquito Habitat Mapper protocol
+- landcover_protocol: the string used in the GLOBE API for the Land Cover Protocol.
 - start_date: the default starting date of GLOBE Obsever data requests in YYYY-MM-DD Form.
 - end_date: the current date in YYYY-MM-DD Form.
 - regions_dict: contains all the different GLOBE regions and the countries associated with each region
