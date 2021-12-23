@@ -5,7 +5,14 @@ from arcgis.features import GeoAccessor
 from arcgis.gis import GIS
 
 from go_utils.download import convert_dates_to_datetime, default_data_clean
-from go_utils.info import start_date, end_date, region_dict, abbreviation_dict
+from go_utils.constants import (
+    mosquito_protocol,
+    landcover_protocol,
+    start_date,
+    end_date,
+    region_dict,
+    abbreviation_dict,
+)
 
 
 def get_country_api_data(
@@ -36,8 +43,8 @@ def get_country_api_data(
     """
 
     item_id_dict = {
-        "mosquito_habitat_mapper": "8bc5b0ac24d3474e9ab6ce2bfb4f37fe",
-        "land_covers": "c68acbfc68db4409b495fd4636646aa6",
+        mosquito_protocol: "8bc5b0ac24d3474e9ab6ce2bfb4f37fe",
+        landcover_protocol: "c68acbfc68db4409b495fd4636646aa6",
     }
 
     if protocol not in item_id_dict:
