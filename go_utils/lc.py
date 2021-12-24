@@ -196,7 +196,7 @@ def unpack_classifications(
     south="lc_SouthClassifications",
     west="lc_WestClassifications",
     ref_col="lc_pid",
-    only_overall=False,
+    unpack=True,
 ):
     """
     Unpacks the classification data in the *raw* GLOBE Observer Landcover data. This method assumes that the columns have been renamed with accordance to the [column cleanup](#cleanup_column_prefix) method.
@@ -221,8 +221,8 @@ def unpack_classifications(
         The name of the column which contains the West Classifications
     ref_col: str, default="lc_pid"
         The name of the column which all of the expanded values will be placed after. For example, if the columns were `[1, 2, 3, 4]` and you chose 3, the new columns will now be `[1, 2, 3, (all classification columns), 4]`.
-    only_overall: bool, default=False
-        True if you only want the overall landcover classifications
+    unpack: bool, default=True
+        True if you want to unpack the directional classifications, False if you only want overall classifications
 
     Returns
     -------
@@ -287,7 +287,7 @@ def unpack_classifications(
     for column in overall_columns:
         lc_df[column] /= 4
 
-    if only_overall:
+    if not unpack:
         lc_df = lc_df.drop(columns=direction_cols)
     return lc_df, overall_columns, direction_cols
 
@@ -573,10 +573,8 @@ def apply_cleanup(lc_df, unpack=True):
     remove_homogenous_cols(lc_df, inplace=True)
     rename_latlon_cols(lc_df, inplace=True)
     cleanup_column_prefix(lc_df, inplace=True)
-    if unpack:
-        lc_df, overall_cols, directional_cols = unpack_classifications(
-            lc_df, only_overall=(not unpack)
-        )
+    lc_df, overall_cols, directional_cols = unpack_classifications(lc_df, unpack=unpack)
+
     round_cols(lc_df, inplace=True)
     standardize_null_vals(lc_df, inplace=True)
     return lc_df

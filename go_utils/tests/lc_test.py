@@ -70,7 +70,7 @@ def test_landcover_unpack():
         {classifications[i]: [sample_data[i % 2]] for i in range(len(classifications))}
     )
     df["lc_pid"] = 0
-    df, overall, direction = unpack_classifications(df, only_overall=True)
+    df, overall, direction = unpack_classifications(df, unpack=False)
     assert df.loc[0, "lc_Overall_CategoryOne"] == 46.5
     assert df.loc[0, "lc_Overall_CategoryTwo"] == 37.5
     for col in direction:
