@@ -1,14 +1,15 @@
-import pytest
-import pandas as pd
 import shutil
+
+import pandas as pd
+import pytest
 
 from go_utils.download import convert_dates_to_datetime
 
-from go_utils.photo_download import (
-    get_mhm_download_targets,
-    get_lc_download_targets,
-    download_mhm_photos,
+from go_utils.photo_download import (  # isort: skip
     download_lc_photos,
+    download_mhm_photos,
+    get_lc_download_targets,
+    get_mhm_download_targets,
     remove_bad_characters,
 )
 

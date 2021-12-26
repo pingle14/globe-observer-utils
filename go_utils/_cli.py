@@ -1,11 +1,12 @@
 import argparse
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from go_utils.download import get_api_data, convert_dates_to_datetime
+from go_utils import lc, mhm
+from go_utils.download import convert_dates_to_datetime, get_api_data
 from go_utils.geoenrich import get_country_api_data
-from go_utils import mhm, lc
-from go_utils.photo_download import download_mhm_photos, download_lc_photos
+from go_utils.photo_download import download_lc_photos, download_mhm_photos
 
 protocol_map = {"mosquito": "mosquito_habitat_mapper", "landcover": "land_covers"}
 

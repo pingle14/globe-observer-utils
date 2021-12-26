@@ -1,20 +1,25 @@
 import math
+import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import re
 import seaborn as sns
 
-from go_utils.cleanup import (
-    replace_column_prefix,
-    rename_latlon_cols,
-    standardize_null_vals,
-    round_cols,
+from go_utils.plot import (  # isort: skip
+    completeness_histogram,
+    multiple_bar_graph,
+    plot_freq_bar,
+)
+
+from go_utils.cleanup import (  # isort: skip
     camel_case,
     remove_homogenous_cols,
+    rename_latlon_cols,
+    replace_column_prefix,
+    round_cols,
+    standardize_null_vals,
 )
-from go_utils.plot import completeness_histogram, plot_freq_bar, multiple_bar_graph
-
 
 __doc__ = """
 
@@ -191,6 +196,7 @@ def unpack_classifications(
     south="lc_SouthClassifications",
     west="lc_WestClassifications",
     ref_col="lc_pid",
+    unpack=True,
 ):
     """
     Unpacks the classification data in the *raw* GLOBE Observer Landcover data. This method assumes that the columns have been renamed with accordance to the [column cleanup](#cleanup_column_prefix) method.
@@ -213,13 +219,19 @@ def unpack_classifications(
         The name of the column which contains the South Classifications
     west: str, default="lc_WestClassifications"
         The name of the column which contains the West Classifications
-    west: str, default="lc_pid"
+    ref_col: str, default="lc_pid"
         The name of the column which all of the expanded values will be placed after. For example, if the columns were `[1, 2, 3, 4]` and you chose 3, the new columns will now be `[1, 2, 3, (all classification columns), 4]`.
+    unpack: bool, default=True
+        True if you want to unpack the directional classifications, False if you only want overall classifications
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with the unpacked classification columns.
+    list
+        A list containing all the generated overall Land Cover column names (mainly for testing purposes).
+    list
+        A list containing all the generated directional Land Cover column names (mainly for testing purposes).
     """
 
     classifications = [north, east, south, west]
@@ -259,8 +271,9 @@ def unpack_classifications(
         for value in values:
             direction_cols.add(direction_name + value)
             overall_columns.add(overall + value)
-
-    direction_data_cols = sorted(list(overall_columns) + list(direction_cols))
+    overall_columns = list(overall_columns)
+    direction_cols = list(direction_cols)
+    direction_data_cols = sorted(overall_columns + direction_cols)
 
     # Creates a blank DataFrame and concats it to the original to avoid iteratively growing the LC DataFrame
     blank_df = pd.DataFrame(
@@ -273,7 +286,10 @@ def unpack_classifications(
     lc_df = lc_df.apply(set_directions, axis=1)
     for column in overall_columns:
         lc_df[column] /= 4
-    return lc_df
+
+    if not unpack:
+        lc_df = lc_df.drop(columns=direction_cols)
+    return lc_df, overall_columns, direction_cols
 
 
 def photo_bit_flags(
@@ -545,7 +561,7 @@ def apply_cleanup(lc_df, unpack=True):
     lc_df : pd.DataFrame
         A DataFrame containing **raw** Landcover Data from the API.
     unpack : bool
-        If True, the Landcover data will expand the classifications into separate columns (results in around 300 columns).
+        If True, the Landcover data will expand the classifications into separate columns (results in around 300 columns). If False, it will just unpack overall landcover.
 
     Returns
     -------
@@ -557,8 +573,8 @@ def apply_cleanup(lc_df, unpack=True):
     remove_homogenous_cols(lc_df, inplace=True)
     rename_latlon_cols(lc_df, inplace=True)
     cleanup_column_prefix(lc_df, inplace=True)
-    if unpack:
-        lc_df = unpack_classifications(lc_df)
+    lc_df, overall_cols, directional_cols = unpack_classifications(lc_df, unpack=unpack)
+
     round_cols(lc_df, inplace=True)
     standardize_null_vals(lc_df, inplace=True)
     return lc_df

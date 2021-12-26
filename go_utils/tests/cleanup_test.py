@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from go_utils.cleanup import (
-    replace_column_prefix,
+from go_utils.cleanup import (  # isort: skip
+    camel_case,
     remove_homogenous_cols,
     rename_latlon_cols,
+    replace_column_prefix,
     round_cols,
     standardize_null_vals,
-    camel_case,
 )
 
 camel_case_data = [

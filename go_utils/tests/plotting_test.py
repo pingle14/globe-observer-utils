@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-from go_utils import mhm, lc
+from go_utils import lc, mhm
 
 
 @pytest.mark.plotting

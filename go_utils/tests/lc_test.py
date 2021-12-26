@@ -2,19 +2,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from go_utils.lc import (
-    extract_classification_name,
-    extract_classification_percentage,
-    unpack_classifications,
-    photo_bit_flags,
+from go_utils.lc import (  # isort: skip
+    add_flags,
+    apply_cleanup,
     classification_bit_flags,
     completion_scores,
-    qa_filter,
-    apply_cleanup,
-    add_flags,
+    extract_classification_name,
+    extract_classification_percentage,
     get_main_classifications,
+    photo_bit_flags,
+    qa_filter,
+    unpack_classifications,
 )
-
 
 test_classification = "60% MUC 02 (b) [Trees, Closely Spaced, Deciduous - Broad Leaved]"
 
@@ -53,7 +52,7 @@ def test_landcover_unpack():
         {classifications[i]: [sample_data[i % 2]] for i in range(len(classifications))}
     )
     df["lc_pid"] = 0
-    df = unpack_classifications(df)
+    df, overall, direction = unpack_classifications(df)
     for i in range(len(classifications)):
         column_name = classifications[i].replace("Classifications", "_")
         if i % 2 == 0:
@@ -65,6 +64,17 @@ def test_landcover_unpack():
 
     assert df.loc[0, "lc_Overall_CategoryOne"] == 46.5
     assert df.loc[0, "lc_Overall_CategoryTwo"] == 37.5
+
+    # Test that we can isolate only overal values
+    df = pd.DataFrame.from_dict(
+        {classifications[i]: [sample_data[i % 2]] for i in range(len(classifications))}
+    )
+    df["lc_pid"] = 0
+    df, overall, direction = unpack_classifications(df, unpack=False)
+    assert df.loc[0, "lc_Overall_CategoryOne"] == 46.5
+    assert df.loc[0, "lc_Overall_CategoryTwo"] == 37.5
+    for col in direction:
+        assert col not in df.columns
 
 
 @pytest.mark.landcover

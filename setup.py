@@ -1,11 +1,8 @@
-from datetime import date
-from os.path import dirname
-from os.path import exists
-from os.path import join
-from os.path import abspath
-from setuptools import find_packages
-from setuptools import setup
 import subprocess
+from datetime import date
+from os.path import abspath, dirname, exists, join
+
+from setuptools import find_packages, setup
 
 setup_dir = dirname(abspath(__file__))
 git_dir = join(setup_dir, ".git")
@@ -56,8 +53,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="IGES",
-    maintainer="Matteo Kimura, Prachi Ingle, Pratham Babaria",
-    maintainer_email="mateus.sakata@gmail.com, phna14@gmail.com, prathambabaria1@gmail.com",
+    maintainer="Matteo Kimura, Prachi Ingle",
+    maintainer_email="mateus.sakata@gmail.com, prachi.ingle@utexas.edu",
     project_urls={
         "Source Code": "https://github.com/IGES-Geospatial/globe-observer-utils",
         "Documentation": "https://iges-geospatial.github.io/globe-observer-utils-docs/go_utils.html",
