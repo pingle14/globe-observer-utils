@@ -197,7 +197,7 @@ def mhm_photo_download():
     )
     name_group.add_argument(
         "--name_additional",
-        "-i",
+        "-add",
         help="Include additonal info in photo names.",
         type=str,
         action="store",
@@ -213,10 +213,10 @@ def mhm_photo_download():
         "classification",
     ]
     name_group.add_argument(
-        "--nargs_exclude",
-        "-x",
+        "--nargs_include",
+        "-in",
         nargs="+",
-        help="Exclude these fields from photo names.",
+        help="Include these fields from photo names.",
         choices=mhm_name_fields,
         type=str,
         action="store",
@@ -239,7 +239,7 @@ def mhm_photo_download():
         download_mhm_photos(
             df,
             args.out,
-            exclude_from_name=args.nargs_exclude,
+            include_in_name=args.nargs_include,
             additional_name_stem=args.name_additional,
         )
     else:
@@ -247,7 +247,7 @@ def mhm_photo_download():
             df,
             args.out,
             **download_args,
-            exclude_from_name=args.nargs_exclude,
+            include_in_name=args.nargs_include,
             additional_name_stem=args.name_additional
         )
 
@@ -289,7 +289,7 @@ def lc_photo_download():
     )
     name_group.add_argument(
         "--name_additional",
-        "-i",
+        "-add",
         help="Include additonal info in photo names.",
         type=str,
         action="store",
@@ -297,8 +297,8 @@ def lc_photo_download():
 
     lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
     name_group.add_argument(
-        "--nargs_exclude",
-        "-x",
+        "--nargs_include",
+        "-in",
         nargs="+",
         help="Exclude these fields from photo names.",
         choices=lc_name_fields,
@@ -329,7 +329,7 @@ def lc_photo_download():
         download_lc_photos(
             df,
             args.out,
-            exclude_from_name=args.nargs_exclude,
+            include_in_name=args.nargs_include,
             additional_name_stem=args.name_additional,
         )
     else:
@@ -337,6 +337,6 @@ def lc_photo_download():
             df,
             args.out,
             **download_args,
-            exclude_from_name=args.nargs_exclude,
+            include_in_name=args.nargs_include,
             additional_name_stem=args.name_additional
         )

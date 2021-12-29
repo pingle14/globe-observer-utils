@@ -101,10 +101,10 @@ For example, `mhm_photo_download "input csv path" "output directory"` will take 
 You can use the `--all` or `-a` to set all the following flags.
 
 #### Custom Photo Naming Flags
-* Use `--name_additional` or `-i` to add custom additional information to the photo names.
-* Use `--nargs_exclude` or `-x` to exclude a field from the default photo name. Can exclude any of the following:
-   * For **mosquito_habitat_mapper** -- Accepted Excluded Names include: `url_type`, `watersource`, `latitude`, `longitude`, `date_str`, `mhm_id`, `classification`
-   * For **land_cover** -- Accepted Excluded Names include: `direction`, `latitude`, `longitude`, `date_str`, `lc_id`
+* Use `--name_additional` or `-add` to add custom additional information to the photo names.
+* Use `--nargs_include` or `-in` to include a field from the default photo name. Can include any of the following:
+   * For **mosquito_habitat_mapper** -- Accepted Included Names include: `url_type`, `watersource`, `latitude`, `longitude`, `date_str`, `mhm_id`, `classification`
+   * For **land_cover** -- Accepted Included Names include: `direction`, `latitude`, `longitude`, `date_str`, `lc_id`
 
 ### Mosquito Specifics
 

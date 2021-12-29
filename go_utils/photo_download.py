@@ -95,14 +95,17 @@ def download_all_photos(targets):
                 print("ERR: Target incorrectly formatted: " + target)
 
 
-
 def _format_param_name(name):
     if pd.isna(name):
         return None
-    return ("".join(s.capitalize() + " " for s in name.split("_")).replace("Photo", "").strip())
+    return (
+        "".join(s.capitalize() + " " for s in name.split("_"))
+        .replace("Photo", "")
+        .strip()
+    )
 
 
-def get_mhm_download_targets(
+def get_mhm_download_targets(  # noqa: C901
     mhm_df,
     directory,
     latitude_col="mhm_Latitude",
@@ -186,10 +189,8 @@ def get_mhm_download_targets(
 
             if include_in_name:
                 for field in list(include_in_name):
-                    if field in list(name_fields):
+                    if field in set(name_fields):
                         name += f"{name_fields[field]}_"
-            # for field in list(name_fields):
-            #     if include_in_name and field in include_in_name:
 
             name += f"{photo_id}.png"
             name = remove_bad_characters(name)
@@ -200,7 +201,7 @@ def get_mhm_download_targets(
                 photo_id = get_globe_photo_id(url)
 
                 # Checks photo_id is valid
-                if not pd.isna(photo_id) and int(photo_id)>=0:
+                if not pd.isna(photo_id) and int(photo_id) >= 0:
                     classification = genus
                     if pd.isna(classification):
                         classification = "None"
@@ -305,7 +306,7 @@ def download_mhm_photos(
     return targets
 
 
-def get_lc_download_targets(
+def get_lc_download_targets(  # noqa: C901
     lc_df,
     directory,
     latitude_col="lc_Latitude",

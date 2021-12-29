@@ -210,7 +210,7 @@ def test_additional_field_naming(
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            mhm_name_fields[0:2]+mhm_name_fields[4:],
+            mhm_name_fields[0:2] + mhm_name_fields[4:],
             "",
             [
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
@@ -220,7 +220,7 @@ def test_additional_field_naming(
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            lc_name_fields[0:1]+lc_name_fields[3:],
+            lc_name_fields[0:1] + lc_name_fields[3:],
             "",
             [
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
