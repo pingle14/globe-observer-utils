@@ -109,32 +109,32 @@ lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, excluded_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            [],
+            mhm_name_fields,
             "",
             full_mhm_names,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            [],
+            lc_name_fields,
             "",
             full_lc_names,
         ),
     ],
 )
-def test_all_field_naming(input_file, func, excluded_fields, additional_info, desired):
+def test_all_field_naming(input_file, func, included_fields, additional_info, desired):
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
 
     targets = func(
         df,
         directory="",
-        exclude_from_name=excluded_fields,
+        include_in_name=included_fields,
         additional_name_stem=additional_info,
     )
     output_filenames = [target[2] for target in targets]
@@ -156,48 +156,48 @@ def test_all_field_naming(input_file, func, excluded_fields, additional_info, de
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, excluded_fields, desired",
+    "input_file, func, included_fields, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            mhm_name_fields,
+            [],
             [(re.sub(r"mhm\_.*\_", "mhm_", x)) for x in full_mhm_names],
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            lc_name_fields,
+            [],
             [(re.sub(r"lc\_.*\_", "lc_", x)) for x in full_lc_names],
         ),
     ],
 )
-def test_no_field_naming(input_file, func, excluded_fields, desired):
-    test_all_field_naming(input_file, func, excluded_fields, "", desired)
+def test_no_field_naming(input_file, func, included_fields, desired):
+    test_all_field_naming(input_file, func, included_fields, "", desired)
 
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, excluded_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            mhm_name_fields,
+            [],
             "ADDITIONAL",
             [(re.sub(r"mhm\_.*\_", "mhm_ADDITIONAL_", x)) for x in full_mhm_names],
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            lc_name_fields,
+            [],
             "ADDITIONAL",
             [(re.sub(r"lc\_.*\_", "lc_ADDITIONAL_", x)) for x in full_lc_names],
         ),
     ],
 )
 def test_additional_field_naming(
-    input_file, func, excluded_fields, additional_info, desired
+    input_file, func, included_fields, additional_info, desired
 ):
     test_all_field_naming(**locals())
 
@@ -205,12 +205,12 @@ def test_additional_field_naming(
 #
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, excluded_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
-            mhm_name_fields[2:4],
+            mhm_name_fields[0:2]+mhm_name_fields[4:],
             "",
             [
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
@@ -220,7 +220,7 @@ def test_additional_field_naming(
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
-            lc_name_fields[1:3],
+            lc_name_fields[0:1]+lc_name_fields[3:],
             "",
             [
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
@@ -230,7 +230,7 @@ def test_additional_field_naming(
     ],
 )
 def test_no_location_field_naming(
-    input_file, func, excluded_fields, additional_info, desired
+    input_file, func, included_fields, additional_info, desired
 ):
     test_all_field_naming(**locals())
 
