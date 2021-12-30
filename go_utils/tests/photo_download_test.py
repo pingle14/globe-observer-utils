@@ -5,11 +5,15 @@ import pandas as pd
 import pytest
 
 from go_utils.download import convert_dates_to_datetime
-from go_utils.photo_download import (download_lc_photos, download_mhm_photos,
-                                     get_globe_photo_id,
-                                     get_lc_download_targets,
-                                     get_mhm_download_targets,
-                                     remove_bad_characters)
+
+from go_utils.photo_download import (  # isort: skip
+    download_lc_photos,
+    download_mhm_photos,
+    get_globe_photo_id,
+    get_lc_download_targets,
+    get_mhm_download_targets,
+    remove_bad_characters,
+)
 
 out_directory = "test_photos"
 full_mhm_names = [
