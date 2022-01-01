@@ -157,6 +157,7 @@ def get_mhm_download_targets(  # noqa: C901
     """
     arguments = locals()
     targets = set()
+    num_invalid_photos = 0
 
     def get_photo_args(
         url_entry,
@@ -215,9 +216,9 @@ def get_mhm_download_targets(  # noqa: C901
                     name = build_name()
                     targets.add((url, directory, name))
                 else:
-                    warnings.warn(f"Invalid photoID: {photo_id}. Ignoring photo")
+                    num_invalid_photos + 1
             else:
-                warnings.warn("Invalid URL. Ignoring photo.")
+                num_invalid_photos + 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -234,6 +235,8 @@ def get_mhm_download_targets(  # noqa: C901
                 mhm_df[genus_col].to_numpy(),
                 mhm_df[species_col].to_numpy() if species_col else "",
             )
+    if num_invalid_photos > 0:
+        warnings.warn(f"Skipped {num_invalid_photos} invalid photos")
     return targets
 
 
@@ -358,6 +361,7 @@ def get_lc_download_targets(  # noqa: C901
     """
     arguments = locals()
     targets = set()
+    num_invalid_photos = 0
 
     def get_photo_args(url, latitude, longitude, direction, date, lc_id):
         if not pd.isna(url) and "https" in url:
@@ -390,9 +394,9 @@ def get_lc_download_targets(  # noqa: C901
                 name = build_name()
                 targets.add((url, directory, name))
             else:
-                warnings.warn(f"Invalid photoID: {photo_id}. Ignoring photo")
+                num_invalid_photos + 1
         else:
-            warnings.warn("Invalid URL. Ignoring photo.")
+            num_invalid_photos + 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -406,7 +410,8 @@ def get_lc_download_targets(  # noqa: C901
                 lc_df[date_col],
                 lc_df[id_col].to_numpy(),
             )
-
+    if num_invalid_photos > 0:
+        warnings.warn(f"Skipped {num_invalid_photos} invalid photos")
     return targets
 
 
