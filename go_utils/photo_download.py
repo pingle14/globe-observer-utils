@@ -4,6 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 import requests
+import warnings
 
 
 def get_globe_photo_id(url):
@@ -64,15 +65,8 @@ def download_photo(url, directory, filename):
         with open(out_path, "wb") as file:
             file.write(downloaded_obj.content)
     else:
-        print(
-            "Either url ("
-            + url
-            + "), directory ("
-            + directory
-            + "), or filename ("
-            + filename
-            + ") was None."
-        )
+        msg = f"Either url ({url}), directory ({directory}), or filename ({filename}) was None."
+        warnings.warn(msg)
 
 
 def download_all_photos(targets):
@@ -86,13 +80,13 @@ def download_all_photos(targets):
     """
     expectedNumParams = 3
     if pd.isna(targets):
-        print("ERR: Targets was none")
+        warnings.warn("Targets was none")
     else:
         for target in targets:
             if (type(target) is tuple) and len(target) == expectedNumParams:
                 download_photo(*target)
             else:
-                print("ERR: Target incorrectly formatted: " + target)
+                warnings.warn(f"Target incorrectly formatted: {target}")
 
 
 def _format_param_name(name):
@@ -151,7 +145,7 @@ def get_mhm_download_targets(  # noqa: C901
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
     include_in_name : list of str, default=[]
-        A list of coloumn names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
         Accepted Included Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
@@ -181,7 +175,7 @@ def get_mhm_download_targets(  # noqa: C901
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
 
-        # f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
+        # Constructs Photo Name using given included fields and additional information
         def build_name():
             name = "mhm_"
             if additional_name_stem and additional_name_stem != "":
@@ -221,9 +215,9 @@ def get_mhm_download_targets(  # noqa: C901
                     name = build_name()
                     targets.add((url, directory, name))
                 else:
-                    print("Invalid photoId. Ignoring Photo")
+                    warnings.warn(f"Invalid photoID: {photo_id}. Ignoring photo")
             else:
-                print("Invalid url. Ignoring Photo URL")
+                warnings.warn("Invalid URL. Ignoring photo.")
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -289,7 +283,7 @@ def download_mhm_photos(
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
     include_in_name : list of str, default=[]
-        A list of coloumn names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name list of coloumn names to include into the downloaded photo names
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name list of column names to include into the downloaded photo names
         Accepted Included Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
@@ -352,7 +346,7 @@ def get_lc_download_targets(  # noqa: C901
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
     include_in_name : list of str, default=[]
-        A list of coloumn names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
         Accepted Included Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
@@ -370,7 +364,7 @@ def get_lc_download_targets(  # noqa: C901
             date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
             photo_id = get_globe_photo_id(url)
 
-            # f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
+            # Constructs Photo Name using given included fields and additional information
             def build_name():
                 name = "lc_"
                 if additional_name_stem and additional_name_stem != "":
@@ -396,9 +390,9 @@ def get_lc_download_targets(  # noqa: C901
                 name = build_name()
                 targets.add((url, directory, name))
             else:
-                print("Invalid photoID: " + photo_id)
+                warnings.warn(f"Invalid photoID: {photo_id}. Ignoring photo")
         else:
-            print("Invalid URL: " + str(url))
+            warnings.warn("Invalid URL. Ignoring photo.")
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -462,7 +456,7 @@ def download_lc_photos(
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
     include_in_name : list of str, default=[]
-        A list of coloumn names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
         Accepted Included Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
