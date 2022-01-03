@@ -1,8 +1,11 @@
+from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from go_utils.cleanup import (  # isort: skip
+    adjust_timezones,
     camel_case,
     filter_invalid_coords,
     remove_homogenous_cols,
@@ -39,6 +42,51 @@ latlon_data = [
         }
     ),
 ]
+
+time_zone_data = [
+    (48.21, 16.36, 1),  # Vienna GMT+1
+    (41.8781, -87.6298, -6),  # Chicago GMT-6
+    (39.7392, -104.9903, -7),  # Denver GMT-7
+    (40.7128, -74.0060, -5),  # NYC GMT-5
+    (34.0522, -118.2437, -8),  # LA GMT-8
+    (33.9249, 18.4241, 2),  # Cape Town GMT+2
+    (3.1390, 101.6869, 7),  # Kuala Lumpur GMT=7
+]
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+@pytest.mark.parametrize("lat, lon, offset", time_zone_data)
+def test_datetime_convert(lat, lon, offset):
+    test_times = pd.to_datetime(
+        np.array(
+            [
+                "2021-01-05T17:42:00",
+                "2021-12-17T03:10:00",
+                "2018-07-01T00:00:00",
+                "2020-08-10T23:59:00",
+                "2020-02-29T3:00:00",
+                "2020-02-29T23:00:00",
+            ]
+        )
+    )
+    lat_col = np.full((len(test_times)), lat)
+    lon_col = np.full((len(test_times)), lon)
+
+    df = pd.DataFrame.from_dict(
+        {"lat": lat_col, "lon": lon_col, "measuredAt": test_times}
+    )
+
+    print(type(df["measuredAt"].to_numpy()[0]))
+
+    output_df = adjust_timezones(df, "measuredAt", "lat", "lon")
+
+    for i, date in enumerate(test_times):
+        output_df.loc[i, "measuredAt"] == date + timedelta(hours=offset)
+
+    assert not output_df.equals(df)
+    adjust_timezones(df, "measuredAt", "lat", "lon", inplace=True)
+    assert output_df.equals(df)
 
 
 @pytest.mark.util

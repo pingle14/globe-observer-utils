@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 import pandas as pd
+from pytz import timezone
+from timezonefinder import TimezoneFinder
 
 __doc__ = """
 
@@ -45,6 +47,33 @@ The GLOBE API CSV’s lacked standardization in indicating No Data. Indicators r
 **Note**: Larvae Counts were also converted to integers and Land Classification Column percentages were also converted to integers, reducing our data density. This logic is further discussed in go_utils.mhm.larvae_to_num for mosquito habitat mapper and go_utils.lc.unpack_classifications
 
 """
+
+
+def adjust_timezones(df, time_col, latitude_col, longitude_col, inplace=False):
+    """
+    Calculates timezone offset and adjusts date columns accordingly
+
+    """
+    tf = TimezoneFinder()
+
+    def convert_timezone(time, latitude, longitude):
+        utc_tz = pd.to_datetime(time, utc=True)
+        local_time_zone = timezone(tf.timezone_at(lng=longitude, lat=latitude))
+        return utc_tz.astimezone(local_time_zone)
+
+    time_zone_converter = np.vectorize(convert_timezone)
+
+    if not inplace:
+        df = df.copy()
+
+    df[time_col] = time_zone_converter(
+        df[time_col].to_numpy(),
+        df[latitude_col].to_numpy(),
+        df[longitude_col].to_numpy(),
+    )
+
+    if not inplace:
+        return df
 
 
 def filter_invalid_coords(

@@ -102,6 +102,8 @@ setup(
         "requests>=2.23.0",
         "arcgis>=1.8.4",
         "seaborn>=0.11.1",
+        "pytz>=2021.3",
+        "timezonefinder>=5.2.0",
     ],
     python_requires=">=3.6",
     license="MIT License",
