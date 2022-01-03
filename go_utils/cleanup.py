@@ -47,6 +47,55 @@ The GLOBE API CSV’s lacked standardization in indicating No Data. Indicators r
 """
 
 
+def filter_invalid_coords(
+    df, latitude_col, longitude_col, inclusive=False, inplace=False
+):
+    """
+    Filters latitude and longitude of a DataFrame to lie within the latitude range of [-90, 90] or (-90, 90) and longitude range of [-180, 180] or (-180, 180)
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to filter
+    latitude_col : str
+        The name of the column that contains latitude values
+    longitude_col : str
+        The name of the column that contains longitude values
+    inclusive : bool, default=False
+        True if you would like the bounds of the latitude and longitude to be inclusive e.g. [-90, 90]. Do note that these bounds may not work with certain GIS software and projections.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with invalid latitude and longitude entries removed. If `inplace=True` it returns None.
+    """
+    if not inplace:
+        df = df.copy()
+
+    if inclusive:
+        mask = (
+            (df[latitude_col] >= -90)
+            & (df[latitude_col] <= 90)
+            & (df[longitude_col] <= 180)
+            & (df[longitude_col] >= -180)
+        )
+    else:
+        mask = (
+            (df[latitude_col] > -90)
+            & (df[latitude_col] < 90)
+            & (df[longitude_col] < 180)
+            & (df[longitude_col] > -180)
+        )
+
+    if not inplace:
+        return df[mask]
+    else:
+        df.mask(~mask, inplace=True)
+        df.dropna(inplace=True)
+
+
 def remove_homogenous_cols(df, exclude=[], inplace=False):
     """
     Removes columns froma DataFrame if they contain only 1 unique value.

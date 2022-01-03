@@ -4,6 +4,7 @@ import pytest
 
 from go_utils.cleanup import (  # isort: skip
     camel_case,
+    filter_invalid_coords,
     remove_homogenous_cols,
     rename_latlon_cols,
     replace_column_prefix,
@@ -22,6 +23,49 @@ camel_case_data = [
 @pytest.mark.parametrize("input_text, delims, expected", camel_case_data)
 def test_camel_case(input_text, delims, expected):
     assert camel_case(input_text, delims) == expected
+
+
+latlon_data = [
+    (
+        {
+            "lat": [-90, 90, 50, -9999, 0, 2, -10, 36.5, 89.999],
+            "lon": [-180, 180, 179.99, -179.99, -9999, 90, -90, 35.6, -17.8],
+        }
+    ),
+    (
+        {
+            "latitude": [-90, 90, -89.999, -23.26, -9999, 12.75, -10, 36.5, 89.999],
+            "longitude": [-180, 22.2, -37.85, -179.99, 180, 90, -90, -9999, 179.99],
+        }
+    ),
+]
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+@pytest.mark.parametrize("df_dict", latlon_data)
+def test_latlon_filter(df_dict):
+    df = pd.DataFrame.from_dict(df_dict)
+    latitude, longitude = df.columns
+
+    # Test exclusive filtering
+    filtered_df = filter_invalid_coords(df, latitude, longitude)
+    assert np.all(filtered_df[latitude] > -90)
+    assert np.all(filtered_df[latitude] < 90)
+    assert np.all(filtered_df[longitude] > -180)
+    assert np.all(filtered_df[longitude] < 180)
+
+    # Test inclusive filtering
+    filtered_df = filter_invalid_coords(df, latitude, longitude, inclusive=True)
+    assert np.all(filtered_df[latitude] >= -90)
+    assert np.all(filtered_df[latitude] <= 90)
+    assert np.all(filtered_df[longitude] >= -180)
+    assert np.all(filtered_df[longitude] <= 180)
+
+    # Test inplace
+    assert not filtered_df.equals(df)
+    filter_invalid_coords(df, latitude, longitude, inclusive=True, inplace=True)
+    assert filtered_df.equals(df)
 
 
 @pytest.mark.util
