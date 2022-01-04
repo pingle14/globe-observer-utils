@@ -51,8 +51,25 @@ The GLOBE API CSV’s lacked standardization in indicating No Data. Indicators r
 
 def adjust_timezones(df, time_col, latitude_col, longitude_col, inplace=False):
     """
-    Calculates timezone offset and adjusts date columns accordingly
+    Calculates timezone offset and adjusts date columns accordingly. This is done because GLOBE data uses UTC timezones and it can be useful to have the time adjusted to the local observation time.
 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to adjust time zones for
+    time_col : str
+        The column that contains the time zone data
+    latitude_col : str
+        The column that contains latitude data
+    longitude_col : str
+        The column that contains longitude data
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with its time entry adjusted to its local timezone. If `inplace=True` it returns None.
     """
     tf = TimezoneFinder()
 
