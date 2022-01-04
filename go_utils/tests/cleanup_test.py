@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from go_utils.cleanup import (  # isort: skip
+from go_utils.cleanup import (
     adjust_timezones,
     camel_case,
     filter_invalid_coords,

@@ -19,7 +19,7 @@ jobs:
     - name: Check import sorting
       run: |
         pip install isort
-        isort ./ --check-only
+        isort ./ --profile black --check-only
   lint:
     name: Lint
     runs-on: ubuntu-latest

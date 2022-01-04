@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from go_utils.lc import (  # isort: skip
+from go_utils.lc import (
     add_flags,
     apply_cleanup,
     classification_bit_flags,

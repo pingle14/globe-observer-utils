@@ -4,8 +4,7 @@ import pandas as pd
 import pytest
 
 from go_utils.download import convert_dates_to_datetime
-
-from go_utils.photo_download import (  # isort: skip
+from go_utils.photo_download import (
     download_lc_photos,
     download_mhm_photos,
     get_lc_download_targets,

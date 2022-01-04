@@ -5,18 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from go_utils.cleanup import (  # isort: skip
+from go_utils.cleanup import (
     rename_latlon_cols,
     replace_column_prefix,
     round_cols,
     standardize_null_vals,
 )
-
-from go_utils.plot import (  # isort: skip
-    completeness_histogram,
-    plot_freq_bar,
-    plot_int_distribution,
-)
+from go_utils.plot import completeness_histogram, plot_freq_bar, plot_int_distribution
 
 __doc__ = r"""
 

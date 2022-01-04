@@ -6,13 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from go_utils.plot import (  # isort: skip
-    completeness_histogram,
-    multiple_bar_graph,
-    plot_freq_bar,
-)
-
-from go_utils.cleanup import (  # isort: skip
+from go_utils.cleanup import (
     camel_case,
     remove_homogenous_cols,
     rename_latlon_cols,
@@ -20,6 +14,7 @@ from go_utils.cleanup import (  # isort: skip
     round_cols,
     standardize_null_vals,
 )
+from go_utils.plot import completeness_histogram, multiple_bar_graph, plot_freq_bar
 
 __doc__ = """
 
