@@ -103,8 +103,20 @@ You can use the `--all` or `-a` to set all the following flags.
 #### Custom Photo Naming Flags
 * Use `--name_additional` or `-add` to add custom additional information to the photo names.
 * Use `--nargs_include` or `-in` to include a field from the default photo name. Can include any of the following:
-   * For **mosquito_habitat_mapper** -- Accepted Included Names include: `url_type`, `watersource`, `latitude`, `longitude`, `date_str`, `mhm_id`, `classification`
-   * For **land_cover** -- Accepted Included Names include: `direction`, `latitude`, `longitude`, `date_str`, `lc_id`
+    * For **mosquito_habitat_mapper** -- Accepted Included Names include:
+        * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+        * `watersource` -- Watersource for the observed mosquito habitat
+        * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+        * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+        * `date_str` -- Date Range expressed as a String
+        * `mhm_id` -- Unique ID for a MHM observation
+        * `classification` -- Mosquito classification (or `"None"` if no classification available)
+    * For **land_cover** -- Accepted Included Names include:
+        * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+        * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+        * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+        * `date_str` -- Date Range expressed as a String
+        * `lc_id` -- Unique ID for a LC observation
 
 ### Mosquito Specifics
 
