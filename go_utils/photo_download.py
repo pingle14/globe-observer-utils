@@ -146,7 +146,14 @@ def get_mhm_download_targets(  # noqa: C901
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
     include_in_name : list of str, default=[]
         A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
-        Accepted Included Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
+        Accepted Included Names include:
+            * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+            * `watersource` -- Watersource for the observed mosquito habitat
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `mhm_id` -- Unique ID for a MHM observation
+            * `classification` -- Mosquito classification (or `"None"` if no classification available)
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
 
@@ -287,7 +294,14 @@ def download_mhm_photos(
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
     include_in_name : list of str, default=[]
         A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name list of column names to include into the downloaded photo names
-        Accepted Included Names include: "url_type", "watersource", "latitude", "longitude", "date_str", "mhm_id", "classification"
+        Accepted Included Names include:
+            * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+            * `watersource` -- Watersource for the observed mosquito habitat
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `mhm_id` -- Unique ID for a MHM observation
+            * `classification` -- Mosquito classification (or `"None"` if no classification available)
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
 
@@ -350,7 +364,12 @@ def get_lc_download_targets(  # noqa: C901
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
     include_in_name : list of str, default=[]
         A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
-        Accepted Included Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+        Accepted Included Names include:
+            * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `lc_id` -- Unique ID for a LC observation
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
 
@@ -462,7 +481,12 @@ def download_lc_photos(
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
     include_in_name : list of str, default=[]
         A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
-        Accepted Included Names include: "direction", "latitude", "longitude", "date_str", "lc_id"
+        Accepted Included Names include:
+            * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `lc_id` -- Unique ID for a LC observation
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
 
