@@ -103,13 +103,14 @@ mhm_name_fields = [
     "mhm_id",
     "classification",
 ]
-
+num_invalid_mhm_photos = 2
 lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
+num_invalid_lc_photos = 5
 
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, included_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired, num_invalid_photos",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
@@ -117,6 +118,7 @@ lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
             mhm_name_fields,
             "",
             full_mhm_names,
+            num_invalid_mhm_photos,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
@@ -124,61 +126,80 @@ lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
             lc_name_fields,
             "",
             full_lc_names,
+            num_invalid_lc_photos,
         ),
     ],
 )
-def test_all_field_naming(input_file, func, included_fields, additional_info, desired):
-    df = pd.read_csv(input_file)
-    convert_dates_to_datetime(df)
+def test_all_field_naming(
+    input_file, func, included_fields, additional_info, desired, num_invalid_photos
+):
+    with pytest.warns(Warning) as record:
+        df = pd.read_csv(input_file)
+        convert_dates_to_datetime(df)
 
-    targets = func(
-        df,
-        directory="",
-        include_in_name=included_fields,
-        additional_name_stem=additional_info,
-    )
-    output_filenames = [target[2] for target in targets]
-    assert len(output_filenames) == len(
-        desired
-    ), "desired len does not equal output_filenames len"
-
-    # Check set equality of desired/expected and output_filenames
-    for filename in desired:
-        assert filename in output_filenames, (
-            filename + " from desired is not in output_filenames."
+        targets = func(
+            df,
+            directory="",
+            include_in_name=included_fields,
+            additional_name_stem=additional_info,
         )
+        output_filenames = [target[2] for target in targets]
+        assert len(output_filenames) == len(
+            desired
+        ), "desired len does not equal output_filenames len"
 
-    for filename in output_filenames:
-        assert filename in output_filenames, (
-            filename + " from output_filenames is not in desired."
-        )
+        # Check set equality of desired/expected and output_filenames
+        for filename in desired:
+            assert filename in output_filenames, (
+                filename + " from desired is not in output_filenames."
+            )
+
+        for filename in output_filenames:
+            assert filename in output_filenames, (
+                filename + " from output_filenames is not in desired."
+            )
+
+        if not record:
+            pytest.fail("Expected a warning!")
+        assert (
+            len(record) == 1
+        ), "Incorrect number of warnings thrown. Expected 1. Got: " + len(record)
+        assert (
+            str(record[0].message) == f"Skipped {num_invalid_photos} invalid photos"
+        ), "Wrong error msg: " + str(record[0].message)
 
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, included_fields, desired",
+    "input_file, func, included_fields, desired, num_invalid_photos",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
             get_mhm_download_targets,
             [],
             [(re.sub(r"mhm\_.*\_", "mhm_", x)) for x in full_mhm_names],
+            num_invalid_mhm_photos,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
             get_lc_download_targets,
             [],
             [(re.sub(r"lc\_.*\_", "lc_", x)) for x in full_lc_names],
+            num_invalid_lc_photos,
         ),
     ],
 )
-def test_no_field_naming(input_file, func, included_fields, desired):
-    test_all_field_naming(input_file, func, included_fields, "", desired)
+def test_no_field_naming(
+    input_file, func, included_fields, desired, num_invalid_photos
+):
+    test_all_field_naming(
+        input_file, func, included_fields, "", desired, num_invalid_photos
+    )
 
 
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, included_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired, num_invalid_photos",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
@@ -186,6 +207,7 @@ def test_no_field_naming(input_file, func, included_fields, desired):
             [],
             "ADDITIONAL",
             [(re.sub(r"mhm\_.*\_", "mhm_ADDITIONAL_", x)) for x in full_mhm_names],
+            num_invalid_mhm_photos,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
@@ -193,11 +215,12 @@ def test_no_field_naming(input_file, func, included_fields, desired):
             [],
             "ADDITIONAL",
             [(re.sub(r"lc\_.*\_", "lc_ADDITIONAL_", x)) for x in full_lc_names],
+            num_invalid_lc_photos,
         ),
     ],
 )
 def test_additional_field_naming(
-    input_file, func, included_fields, additional_info, desired
+    input_file, func, included_fields, additional_info, desired, num_invalid_photos
 ):
     test_all_field_naming(**locals())
 
@@ -205,7 +228,7 @@ def test_additional_field_naming(
 #
 @pytest.mark.photodownload
 @pytest.mark.parametrize(
-    "input_file, func, included_fields, additional_info, desired",
+    "input_file, func, included_fields, additional_info, desired, num_invalid_photos",
     [
         (
             "go_utils/tests/sample_data/mhm_small.csv",
@@ -216,6 +239,7 @@ def test_additional_field_naming(
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
                 for x in full_mhm_names
             ],
+            num_invalid_mhm_photos,
         ),
         (
             "go_utils/tests/sample_data/lc_small.csv",
@@ -226,11 +250,12 @@ def test_additional_field_naming(
                 (re.sub(r"-?\d+[.][0-9]+\_-?\d+[.][0-9]+\_", "", x))
                 for x in full_lc_names
             ],
+            num_invalid_lc_photos,
         ),
     ],
 )
 def test_no_location_field_naming(
-    input_file, func, included_fields, additional_info, desired
+    input_file, func, included_fields, additional_info, desired, num_invalid_photos
 ):
     test_all_field_naming(**locals())
 

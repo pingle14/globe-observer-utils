@@ -58,15 +58,15 @@ def download_photo(url, directory, filename):
     filename : str
         The name of the photo
     """
-    if any(not pd.isna(x) for x in [url, directory, filename]):
+    if any(pd.isna(x) for x in [url, directory, filename]):
+        msg = f"Either url ({url}), directory ({directory}), or filename ({filename}) was None."
+        warnings.warn(msg)
+    else:
         downloaded_obj = requests.get(url, allow_redirects=True)
         filename = remove_bad_characters(filename)
         out_path = os.path.join(directory, filename)
         with open(out_path, "wb") as file:
             file.write(downloaded_obj.content)
-    else:
-        msg = f"Either url ({url}), directory ({directory}), or filename ({filename}) was None."
-        warnings.warn(msg)
 
 
 def download_all_photos(targets):
@@ -99,7 +99,38 @@ def _format_param_name(name):
     )
 
 
-def get_mhm_download_targets(  # noqa: C901
+# Constructs Photo Name using given included fields and additional information
+def _build_photo_name(
+    protocol, photo_id, name_fields, include_in_name=[], additional_name_stem=""
+):
+    valid_protocols = ["lc_", "mhm_"]
+    if not protocol or protocol not in valid_protocols:
+        warnings.warn("Invalid protocol")
+        return None
+    name = protocol
+    if additional_name_stem and additional_name_stem != "":
+        name += f"{additional_name_stem}_"
+
+    if include_in_name:
+        for field in list(include_in_name):
+            if field in set(name_fields):
+                name += f"{name_fields[field]}_"
+
+    name += f"{photo_id}.png"
+    name = remove_bad_characters(name)
+    return name
+
+
+def _get_mosquito_classification(genus, species):
+    classification = genus
+    if pd.isna(classification):
+        classification = "None"
+    elif not pd.isna(species):
+        classification = f"{classification} {species}"
+    return classification
+
+
+def get_mhm_download_targets(
     mhm_df,
     directory,
     latitude_col="mhm_Latitude",
@@ -164,7 +195,7 @@ def get_mhm_download_targets(  # noqa: C901
     """
     arguments = locals()
     targets = set()
-    num_invalid_photos = 0
+    num_invalid_photos = {"count": 0}
 
     def get_photo_args(
         url_entry,
@@ -183,49 +214,35 @@ def get_mhm_download_targets(  # noqa: C901
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
 
-        # Constructs Photo Name using given included fields and additional information
-        def build_name():
-            name = "mhm_"
-            if additional_name_stem and additional_name_stem != "":
-                name += f"{additional_name_stem}_"
-
-            if include_in_name:
-                for field in list(include_in_name):
-                    if field in set(name_fields):
-                        name += f"{name_fields[field]}_"
-
-            name += f"{photo_id}.png"
-            name = remove_bad_characters(name)
-            return name
-
         for url in urls:
             if not pd.isna(url) and "https" in url:
                 photo_id = get_globe_photo_id(url)
 
+                name_fields = {
+                    "url_type": url_type,
+                    "watersource": watersource,
+                    "latitude": round(latitude, 5),
+                    "longitude": round(longitude, 5),
+                    "date_str": date_str,
+                    "mhm_id": mhm_id,
+                    "classification": _get_mosquito_classification(genus, species),
+                }
+
                 # Checks photo_id is valid
                 if not pd.isna(photo_id) and int(photo_id) >= 0:
-                    classification = genus
-                    if pd.isna(classification):
-                        classification = "None"
-                    elif not pd.isna(species):
-                        classification = f"{classification} {species}"
-
-                    name_fields = {
-                        "url_type": url_type,
-                        "watersource": watersource,
-                        "latitude": round(latitude, 5),
-                        "longitude": round(longitude, 5),
-                        "date_str": date_str,
-                        "mhm_id": mhm_id,
-                        "classification": classification,
-                    }
-
-                    name = build_name()
+                    protocol = "mhm_"
+                    name = _build_photo_name(
+                        protocol,
+                        photo_id,
+                        name_fields,
+                        include_in_name,
+                        additional_name_stem,
+                    )
                     targets.add((url, directory, name))
                 else:
-                    num_invalid_photos + 1
+                    num_invalid_photos["count"] += 1
             else:
-                num_invalid_photos + 1
+                num_invalid_photos["count"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -242,8 +259,8 @@ def get_mhm_download_targets(  # noqa: C901
                 mhm_df[genus_col].to_numpy(),
                 mhm_df[species_col].to_numpy() if species_col else "",
             )
-    if num_invalid_photos > 0:
-        warnings.warn(f"Skipped {num_invalid_photos} invalid photos")
+    if num_invalid_photos["count"] > 0:
+        warnings.warn(f"Skipped {num_invalid_photos['count']} invalid photos")
     return targets
 
 
@@ -317,7 +334,7 @@ def download_mhm_photos(
     return targets
 
 
-def get_lc_download_targets(  # noqa: C901
+def get_lc_download_targets(
     lc_df,
     directory,
     latitude_col="lc_Latitude",
@@ -380,26 +397,12 @@ def get_lc_download_targets(  # noqa: C901
     """
     arguments = locals()
     targets = set()
-    num_invalid_photos = 0
+    num_invalid_photos = {"count": 0}
 
     def get_photo_args(url, latitude, longitude, direction, date, lc_id):
         if not pd.isna(url) and "https" in url:
             date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
             photo_id = get_globe_photo_id(url)
-
-            # Constructs Photo Name using given included fields and additional information
-            def build_name():
-                name = "lc_"
-                if additional_name_stem and additional_name_stem != "":
-                    name += f"{additional_name_stem}_"
-
-                if include_in_name:
-                    for field in list(include_in_name):
-                        if field in list(name_fields):
-                            name += f"{name_fields[field]}_"
-                name += f"{photo_id}.png"
-                name = remove_bad_characters(name)
-                return name
 
             name_fields = {
                 "direction": direction,
@@ -410,12 +413,19 @@ def get_lc_download_targets(  # noqa: C901
             }
 
             if not pd.isna(photo_id) and int(photo_id) >= 0:
-                name = build_name()
+                protocol = "lc_"
+                name = _build_photo_name(
+                    protocol,
+                    photo_id,
+                    name_fields,
+                    include_in_name,
+                    additional_name_stem,
+                )
                 targets.add((url, directory, name))
             else:
-                num_invalid_photos + 1
+                num_invalid_photos["count"] += 1
         else:
-            num_invalid_photos + 1
+            num_invalid_photos["count"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -429,8 +439,8 @@ def get_lc_download_targets(  # noqa: C901
                 lc_df[date_col],
                 lc_df[id_col].to_numpy(),
             )
-    if num_invalid_photos > 0:
-        warnings.warn(f"Skipped {num_invalid_photos} invalid photos")
+    if num_invalid_photos["count"] > 0:
+        warnings.warn(f"Skipped {num_invalid_photos['count']} invalid photos")
     return targets
 
 
