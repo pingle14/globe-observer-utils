@@ -103,9 +103,19 @@ mhm_name_fields = [
     "mhm_id",
     "classification",
 ]
-num_invalid_mhm_photos = 2
+num_invalid_mhm_photos = {
+    "invalid_URL": 0,
+    "rejected": 1,
+    "pending": 1,
+    "bad_photo_id": 0,
+}
 lc_name_fields = ["direction", "latitude", "longitude", "date_str", "lc_id"]
-num_invalid_lc_photos = 5
+num_invalid_lc_photos = {
+    "invalid_URL": 3,
+    "rejected": 1,
+    "pending": 1,
+    "bad_photo_id": 0,
+}
 
 
 @pytest.mark.photodownload
@@ -164,9 +174,14 @@ def test_all_field_naming(
         assert (
             len(record) == 1
         ), "Incorrect number of warnings thrown. Expected 1. Got: " + len(record)
-        assert (
-            str(record[0].message) == f"Skipped {num_invalid_photos} invalid photos"
-        ), "Wrong error msg: " + str(record[0].message)
+        _check_num_skipped_photo_warning(num_invalid_photos, str(record[0].message))
+
+
+def _check_num_skipped_photo_warning(num_invalid_photos: dict, actual_warning: str):
+    assert (
+        f"Skipped {sum(num_invalid_photos.values())} invalid photos" in actual_warning
+        and f"{num_invalid_photos}" in actual_warning
+    ), ("Wrong error msg: " + actual_warning)
 
 
 @pytest.mark.photodownload

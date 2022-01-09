@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 
 
-def get_globe_photo_id(url):
+def get_globe_photo_id(url: str):
     """
     Gets the GLOBE Photo ID from a url
 
@@ -26,7 +26,7 @@ def get_globe_photo_id(url):
     return None
 
 
-def remove_bad_characters(filename):
+def remove_bad_characters(filename: str):
     """
     Removes erroneous characters from filenames. This includes the `/` character as this is assuming that the filename is being passed, not a path that may include that symbol as part of a directory.
 
@@ -45,7 +45,7 @@ def remove_bad_characters(filename):
     return re.sub(r"[<>:?\"/\\|*]", "", filename)
 
 
-def download_photo(url, directory, filename):
+def download_photo(url: str, directory: str, filename: str):
     """
     Downloads a photo to a directory.
 
@@ -89,7 +89,7 @@ def download_all_photos(targets):
                 warnings.warn(f"Target incorrectly formatted: {target}")
 
 
-def _format_param_name(name):
+def _format_param_name(name: str):
     if pd.isna(name):
         return None
     return (
@@ -128,6 +128,13 @@ def _get_mosquito_classification(genus, species):
     elif not pd.isna(species):
         classification = f"{classification} {species}"
     return classification
+
+
+def _warn_num_invalid_photos(num_invalid_photos: dict):
+    if sum(num_invalid_photos.values()) > 0:
+        msg = f"Skipped {sum(num_invalid_photos.values())} invalid photos: "
+        msg += str(num_invalid_photos)
+        warnings.warn(msg)
 
 
 def get_mhm_download_targets(
@@ -195,7 +202,12 @@ def get_mhm_download_targets(
     """
     arguments = locals()
     targets = set()
-    num_invalid_photos = {"count": 0}
+    num_invalid_photos = {
+        "invalid_URL": 0,
+        "rejected": 0,
+        "pending": 0,
+        "bad_photo_id": 0,
+    }
 
     def get_photo_args(
         url_entry,
@@ -240,9 +252,13 @@ def get_mhm_download_targets(
                     )
                     targets.add((url, directory, name))
                 else:
-                    num_invalid_photos["count"] += 1
+                    num_invalid_photos["bad_photo_id"] += 1
+            elif not pd.isna(url) and "rejected" in url:
+                num_invalid_photos["rejected"] += 1
+            elif not pd.isna(url) and "pending" in url:
+                num_invalid_photos["pending"] += 1
             else:
-                num_invalid_photos["count"] += 1
+                num_invalid_photos["invalid_URL"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -259,8 +275,7 @@ def get_mhm_download_targets(
                 mhm_df[genus_col].to_numpy(),
                 mhm_df[species_col].to_numpy() if species_col else "",
             )
-    if num_invalid_photos["count"] > 0:
-        warnings.warn(f"Skipped {num_invalid_photos['count']} invalid photos")
+    _warn_num_invalid_photos(num_invalid_photos)
     return targets
 
 
@@ -397,7 +412,12 @@ def get_lc_download_targets(
     """
     arguments = locals()
     targets = set()
-    num_invalid_photos = {"count": 0}
+    num_invalid_photos = {
+        "invalid_URL": 0,
+        "rejected": 0,
+        "pending": 0,
+        "bad_photo_id": 0,
+    }
 
     def get_photo_args(url, latitude, longitude, direction, date, lc_id):
         if not pd.isna(url) and "https" in url:
@@ -423,9 +443,13 @@ def get_lc_download_targets(
                 )
                 targets.add((url, directory, name))
             else:
-                num_invalid_photos["count"] += 1
+                num_invalid_photos["bad_photo_id"] += 1
+        elif not pd.isna(url) and "rejected" in url:
+            num_invalid_photos["rejected"] += 1
+        elif not pd.isna(url) and "pending" in url:
+            num_invalid_photos["pending"] += 1
         else:
-            num_invalid_photos["count"] += 1
+            num_invalid_photos["invalid_URL"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -439,8 +463,7 @@ def get_lc_download_targets(
                 lc_df[date_col],
                 lc_df[id_col].to_numpy(),
             )
-    if num_invalid_photos["count"] > 0:
-        warnings.warn(f"Skipped {num_invalid_photos['count']} invalid photos")
+    _warn_num_invalid_photos(num_invalid_photos)
     return targets
 
 
