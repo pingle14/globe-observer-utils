@@ -29,6 +29,12 @@ This codebase uses the [black formatter](https://github.com/psf/black) to check 
 
 This will automatically format your code to Python standards.
 
+### Import Sorting
+To make sure imports are sorted, [isort](https://github.com/PyCQA/isort) is used.
+
+1. Run `pip install isort` to get the package.
+2. After making changes, run `isort ./ --profile black` (the profile black ensures no conflicts with the black formatter)
+
 ### Linter
 This codebase uses [flake8](https://github.com/pycqa/flake8) to lint code. 
 

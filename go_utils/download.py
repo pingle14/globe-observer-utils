@@ -5,12 +5,11 @@ import requests
 
 import go_utils.lc as lc
 import go_utils.mhm as mhm
-
-from go_utils.constants import (  # isort: skip
-    mosquito_protocol,
-    landcover_protocol,
-    start_date,
+from go_utils.constants import (
     end_date,
+    landcover_protocol,
+    mosquito_protocol,
+    start_date,
 )
 
 
