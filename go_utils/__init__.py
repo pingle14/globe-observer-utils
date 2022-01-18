@@ -22,7 +22,7 @@ Example Notebooks
 CLI Script Documentation
 -----------
 
-The CLI Scripts are intended to provide fast and accessible ways of collecting cleaned GLOBE Observer data from the commandline. 
+The CLI Scripts are intended to provide fast and accessible ways of collecting cleaned GLOBE Observer data from the commandline.
 
 ## Getting GLOBE Data CSVs
 There are two commands that can be used to get data from Mosquito Habitat Mapper and Land Cover, respectively.
@@ -76,7 +76,7 @@ You can use `--hasclassification` or `-hc` to only get data which has atleast on
 You can use `--hasphoto` or `-hp` to only get data which has atleast one Photo entry.
 
 #### Has All Classifications
-You can use `--hasallclassifications` or `-hac` to only get data which has all classifications filled out. 
+You can use `--hasallclassifications` or `-hac` to only get data which has all classifications filled out.
 
 #### Has All Photos
 You can use `--hasallphotos` or `-hap` to only get data which has all photos filled out.
@@ -94,11 +94,29 @@ There are two commands that can be used to get photos for cleaned Mosquito Habit
 For Mosquito Habitat Mapper, there is `mhm-photo-download` and for Land Cover, there is `lc-photo-download`.
 
 ### General Command
-In order for the photo download scripts to work, you must specify an input path and output path. 
+In order for the photo download scripts to work, you must specify an input path and output path.
 For example, `mhm_photo_download "input csv path" "output directory"` will take the Mosquito Habitat Mapper data stored in the input CSV and download the photos to the output directory. If the output directory doesn't exist, it will be created.
 
 #### All Flag
 You can use the `--all` or `-a` to set all the following flags.
+
+#### Custom Photo Naming Flags
+* Use `--name_additional` or `-add` to add custom additional information to the photo names.
+* Use `--nargs_include` or `-in` to include a field from the default photo name. Can include any of the following:
+    * For **mosquito_habitat_mapper** -- Accepted Included Names include:
+        * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+        * `watersource` -- Watersource for the observed mosquito habitat
+        * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+        * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+        * `date_str` -- Date Range expressed as a String
+        * `mhm_id` -- Unique ID for a MHM observation
+        * `classification` -- Mosquito classification (or `"None"` if no classification available)
+    * For **land_cover** -- Accepted Included Names include:
+        * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+        * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+        * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+        * `date_str` -- Date Range expressed as a String
+        * `lc_id` -- Unique ID for a LC observation
 
 ### Mosquito Specifics
 
