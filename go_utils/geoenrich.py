@@ -43,7 +43,7 @@ def get_country_api_data(
     """
 
     item_id_dict = {
-        mosquito_protocol: "8bc5b0ac24d3474e9ab6ce2bfb4f37fe",
+        mosquito_protocol: "82b333d2cbb94de88e63a025447f0ddb",
         landcover_protocol: "c68acbfc68db4409b495fd4636646aa6",
     }
 

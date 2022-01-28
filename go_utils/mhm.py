@@ -211,7 +211,9 @@ def is_container_flag(
     if not inplace:
         df = df.copy()
 
-    mark_containers = np.vectorize(lambda container: "container" in container)
+    mark_containers = np.vectorize(
+        lambda container: not pd.isna(container) and "container" in container
+    )
     df[bit_col] = mark_containers(df[watersource_col].to_numpy()).astype(int)
 
     if not inplace:
