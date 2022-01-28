@@ -38,6 +38,7 @@ def test_bad_api_call():
 
 
 @pytest.mark.downloadtest
+@pytest.mark.geoenrich
 @pytest.mark.parametrize("protocol, prefix", protocol_prefixes)
 def test_country_download(protocol, prefix):
     # Test regular method
