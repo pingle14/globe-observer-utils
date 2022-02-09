@@ -85,17 +85,14 @@ def get_country_api_data(
     if is_clean:
         df = default_data_clean(df, protocol)
 
+    for region in regions:
+        countries.extend(region_dict[region])
+    countries_set = set(countries)
     # Return the regular data if nothing is specified
-    if not countries and not regions:
+    if not countries_set:
         return df
     else:
-        mask = np.zeros((len(df)), dtype=bool)
-        if countries:
-            mask |= _get_valid_countries_mask(df, protocol, countries)
-
-        if regions:
-            for region in regions:
-                mask |= _get_valid_countries_mask(df, protocol, region_dict[region])
+        mask = _get_valid_countries_mask(df, protocol, countries_set)
         return df[mask]
 
 
