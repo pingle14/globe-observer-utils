@@ -142,6 +142,41 @@ def filter_invalid_coords(
         df.dropna(inplace=True)
 
 
+def filter_duplicates(df, columns, group_size, inplace=False):
+    """
+    Filters possible duplicate data by grouping together suspiciously similar entries.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to filter
+    columns : list of str
+        The name of the columns that duplicate data would share. This can include things such as MGRS Latitude, MGRS Longitude, measure date, and other fields (e.g. mosquito water source for mosquito habitat mapper).
+    group_size : int
+        The number of duplicate entries in a group needed to classify the group as duplicate data.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with duplicate data removed. If `inplace=True` it returns None.
+    """
+
+    if not inplace:
+        df = df.copy()
+
+    # groups / filters suspected events
+    suspect_df = df.groupby(by=columns).filter(lambda x: len(x) >= group_size)
+    suspect_mask = df.isin(suspect_df)
+
+    if not inplace:
+        return df[~suspect_mask].dropna(how="all")
+    else:
+        df.mask(suspect_mask, inplace=True)
+        df.dropna(how="all", inplace=True)
+
+
 def remove_homogenous_cols(df, exclude=[], inplace=False):
     """
     Removes columns froma DataFrame if they contain only 1 unique value.

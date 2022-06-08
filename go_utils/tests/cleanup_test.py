@@ -7,6 +7,7 @@ import pytest
 from go_utils.cleanup import (
     adjust_timezones,
     camel_case,
+    filter_duplicates,
     filter_invalid_coords,
     remove_homogenous_cols,
     rename_latlon_cols,
@@ -204,3 +205,33 @@ def test_null_standardize():
     assert not output_df.equals(df)
     standardize_null_vals(df, ".", inplace=True)
     assert output_df.equals(df)
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+def test_duplicate_filter():
+    df = pd.DataFrame.from_dict(
+        {
+            "Latitude": [5, 5, 7, 8],
+            "Longitude": [6, 6, 10, 2],
+            "attribute1": ["foo", "foo", "foo", "bar"],
+            "attribute2": ["baz", "baz", "baz", "baz"],
+        }
+    )
+
+    filtered_df = filter_duplicates(df, ["Latitude", "Longitude", "attribute1"], 2)
+
+    assert not np.any(
+        (filtered_df["Latitude"] == 5)
+        & (filtered_df["Longitude"] == 6)
+        & (filtered_df["attribute1"] == "foo")
+    )
+
+    filtered_df = filter_duplicates(df, ["attribute1", "attribute2"], 3)
+    assert not np.any(
+        (filtered_df["attribute1"] == "foo") & (filtered_df["attribute2"] == "baz")
+    )
+
+    assert not filtered_df.equals(df)
+    filter_duplicates(df, ["attribute1", "attribute2"], 3, True)
+    assert filtered_df.equals(df)
