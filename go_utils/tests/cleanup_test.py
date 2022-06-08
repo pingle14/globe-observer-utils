@@ -9,6 +9,7 @@ from go_utils.cleanup import (
     camel_case,
     filter_duplicates,
     filter_invalid_coords,
+    filter_poor_geolocational_data,
     remove_homogenous_cols,
     rename_latlon_cols,
     replace_column_prefix,
@@ -234,4 +235,33 @@ def test_duplicate_filter():
 
     assert not filtered_df.equals(df)
     filter_duplicates(df, ["attribute1", "attribute2"], 3, True)
+    assert filtered_df.equals(df)
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+def test_poor_geolocational_data_filter():
+    df = pd.DataFrame.from_dict(
+        {
+            "Latitude": [36.5, 37.8, 39.2, 30, 19.2],
+            "Longitude": [95.2, 28.6, 15, 13.5, 30.8],
+            "MGRSLatitude": [36.5, 37.9, 39.3, 30.2, 19.3],
+            "MGRSLongitude": [95.2, 28.6, 15.5, 14, 30.2],
+        }
+    )
+    filtered_df = filter_poor_geolocational_data(
+        df, "Latitude", "Longitude", "MGRSLatitude", "MGRSLongitude"
+    )
+
+    assert not np.any(
+        (filtered_df["Latitude"] == filtered_df["MGRSLatitude"])
+        & (filtered_df["Longitude"] == filtered_df["MGRSLongitude"])
+    )
+    assert not np.any(filtered_df["Latitude"] == filtered_df["Latitude"].astype(int))
+    assert not np.any(filtered_df["Longitude"] == filtered_df["Longitude"].astype(int))
+
+    assert not filtered_df.equals(df)
+    filter_poor_geolocational_data(
+        df, "Latitude", "Longitude", "MGRSLatitude", "MGRSLongitude", True
+    )
     assert filtered_df.equals(df)

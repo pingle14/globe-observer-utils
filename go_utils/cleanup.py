@@ -177,6 +177,61 @@ def filter_duplicates(df, columns, group_size, inplace=False):
         df.dropna(how="all", inplace=True)
 
 
+def filter_poor_geolocational_data(
+    df,
+    latitude_col,
+    longitude_col,
+    mgrs_latitude_col,
+    mgrs_longitude_col,
+    inplace=False,
+):
+    """
+    Filters latitude and longitude of a DataFrame that contain poor geolocational quality.
+
+    latitude_col : str
+        The name of the column that contains latitude values
+    longitude_col : str
+        The name of the column that contains longitude values
+    mgrs_latitude_col : str
+        The name of the column that contains MGRS latitude values
+    mgrs_longitude_col : str
+        The name of the column that contains MGRS longitude values
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with bad latitude and longitude entries removed. If `inplace=True` it returns None.
+    """
+
+    def geolocational_filter(gps_lat, gps_lon, recorded_lat, recorded_lon):
+        return (
+            (recorded_lat == gps_lat and recorded_lon == gps_lon)
+            or gps_lat == int(gps_lat)
+            or gps_lon == int(gps_lon)
+        )
+
+    if not inplace:
+        df = df.copy()
+
+    vectorized_filter = np.vectorize(geolocational_filter)
+    bad_data = vectorized_filter(
+        df[latitude_col].to_numpy(),
+        df[longitude_col].to_numpy(),
+        df[mgrs_latitude_col].to_numpy(),
+        df[mgrs_longitude_col].to_numpy(),
+    )
+
+    filtered_df = df[~bad_data]
+
+    if not inplace:
+        return filtered_df
+    else:
+        df.mask(~df.isin(filtered_df), inplace=True)
+        df.dropna(how="all", inplace=True)
+
+
 def remove_homogenous_cols(df, exclude=[], inplace=False):
     """
     Removes columns froma DataFrame if they contain only 1 unique value.
