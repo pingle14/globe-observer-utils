@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import requests
+from PIL import Image
 
 
 def get_globe_photo_id(url: str):
@@ -45,7 +46,7 @@ def remove_bad_characters(filename: str):
     return re.sub(r"[<>:?\"/\\|*]", "", filename)
 
 
-def download_photo(url: str, directory: str, filename: str):
+def download_photo(url: str, directory: str, filename: str, resolution=None):
     """
     Downloads a photo to a directory.
 
@@ -57,6 +58,8 @@ def download_photo(url: str, directory: str, filename: str):
         The directory that the photo should be saved in
     filename : str
         The name of the photo
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
     """
     if any(pd.isna(x) for x in [url, directory, filename]):
         msg = f"Either url ({url}), directory ({directory}), or filename ({filename}) was None."
@@ -65,8 +68,43 @@ def download_photo(url: str, directory: str, filename: str):
         downloaded_obj = requests.get(url, allow_redirects=True)
         filename = remove_bad_characters(filename)
         out_path = os.path.join(directory, filename)
-        with open(out_path, "wb") as file:
-            file.write(downloaded_obj.content)
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        if pd.isna(resolution):
+            with open(out_path, "wb") as file:
+                file.write(downloaded_obj.content)
+        else:
+            get_img_at_resolution(url, out_path, resolution)
+
+
+def get_img_at_resolution(url, path, resolution):
+    """
+    Downloads an image from a url at a specified resolution
+
+    Parameters
+    ----------
+    url : str
+        An image URL
+    path : str
+        The filepath to save the image to
+    resolution : tuple of int
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image.
+    """
+
+    def get_img():
+        with Image.open(requests.get(url, stream=True).raw) as img:
+            img.resize(resolution).save(path)
+
+    try:
+        get_img()
+    except Exception as e:  # Sometimes the image download fails and it has to be rerun
+        warnings.warn(f"{url} failed due to {repr(e)}, retrying...")
+        try:
+            get_img()
+            warnings.warn("retry successful")
+        except Exception as e:
+            warnings.warn(f"{url} failed: {repr(e)}")
+            return
 
 
 def download_all_photos(targets):
@@ -76,9 +114,9 @@ def download_all_photos(targets):
     Parameters
     ----------
     targets : list of tuple of str
-        Contains tuples that store the url, directory, and filename of the desired photos to be downloaded in that order.
+        Contains tuples that store the url, directory, filename, and resolution (will be None to get original photo resolution) of the desired photos to be downloaded in that order.
     """
-    expectedNumParams = 3
+    expectedNumParams = 4
     if pd.isna(targets):
         warnings.warn("Targets was none")
     else:
@@ -152,6 +190,7 @@ def get_mhm_download_targets(
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
     include_in_name=[],
     additional_name_stem="",
+    resolution=None,
 ):
     """
     Generates mosquito habitat mapper targets to download
@@ -194,6 +233,8 @@ def get_mhm_download_targets(
             * `classification` -- Mosquito classification (or `"None"` if no classification available)
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
@@ -250,7 +291,7 @@ def get_mhm_download_targets(
                         include_in_name,
                         additional_name_stem,
                     )
-                    targets.add((url, directory, name))
+                    targets.add((url, directory, name, resolution))
                 else:
                     num_invalid_photos["bad_photo_id"] += 1
             elif not pd.isna(url) and "rejected" in url:
@@ -294,6 +335,7 @@ def download_mhm_photos(
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
     include_in_name=[],
     additional_name_stem="",
+    resolution=None,
 ):
     """
     Downloads mosquito habitat mapper photos
@@ -336,14 +378,14 @@ def download_mhm_photos(
             * `classification` -- Mosquito classification (or `"None"` if no classification available)
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
     set of tuple of str
         Contains the (url, directory, and filename) for each desired mosquito habitat mapper photo
     """
-    if not os.path.exists(directory):
-        os.mkdir(directory)
     targets = get_mhm_download_targets(**locals())
     download_all_photos(targets)
     return targets
@@ -364,6 +406,7 @@ def get_lc_download_targets(
     west_photo="lc_WestPhotoUrl",
     include_in_name=[],
     additional_name_stem="",
+    resolution=None,
 ):
     """
     Generates landcover targets to download
@@ -404,6 +447,8 @@ def get_lc_download_targets(
             * `lc_id` -- Unique ID for a LC observation
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
@@ -441,7 +486,7 @@ def get_lc_download_targets(
                     include_in_name,
                     additional_name_stem,
                 )
-                targets.add((url, directory, name))
+                targets.add((url, directory, name, resolution))
             else:
                 num_invalid_photos["bad_photo_id"] += 1
         elif not pd.isna(url) and "rejected" in url:
@@ -482,6 +527,7 @@ def download_lc_photos(
     west_photo="lc_WestPhotoUrl",
     include_in_name=[],
     additional_name_stem="",
+    resolution=None,
 ):
     """
     Downloads Landcover photos for landcover data.
@@ -522,15 +568,14 @@ def download_lc_photos(
             * `lc_id` -- Unique ID for a LC observation
     additional_name_stem : str, default=""
         Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
     set of tuple of str
         Contains the (url, directory, and filename) for each desired land cover photo
     """
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-
     targets = get_lc_download_targets(**locals())
     download_all_photos(targets)
     return targets

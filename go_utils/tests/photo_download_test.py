@@ -1,13 +1,16 @@
+import os
 import re
 import shutil
 
 import pandas as pd
 import pytest
+from PIL import Image
 
 from go_utils.download import convert_dates_to_datetime
 from go_utils.photo_download import (
     download_lc_photos,
     download_mhm_photos,
+    download_photo,
     get_globe_photo_id,
     get_lc_download_targets,
     get_mhm_download_targets,
@@ -286,7 +289,8 @@ def photodownload_setup(request):
     df = pd.read_csv(input_file)
     convert_dates_to_datetime(df)
     yield df, func  # return generated df, and func
-    shutil.rmtree(out_directory)  # delete directory tree
+    if os.path.exists(out_directory):
+        shutil.rmtree(out_directory)  # delete directory tree
 
 
 @pytest.mark.downloadtest
@@ -294,3 +298,29 @@ def photodownload_setup(request):
 def test_photodownload(photodownload_setup):
     df, func = photodownload_setup
     func(df, out_directory)
+
+    desired_dimension = (1920, 1080)
+    func(df, out_directory, resolution=desired_dimension)
+    for file in os.listdir(out_directory):
+        with Image.open(os.path.join(out_directory, file)) as img:
+            for desired, actual in zip(desired_dimension, img.size):
+                assert desired == actual
+
+
+@pytest.mark.downloadtest
+@pytest.mark.photodownload
+@pytest.mark.resolutionphoto
+def test_resolution_photodownload():
+    test_url = "https://picsum.photos/id/237/200/300"
+    download_photo(test_url, out_directory, "unscaled.png")
+    with Image.open(os.path.join(out_directory, "unscaled.png")) as img:
+        w, h = img.size
+        assert w == 200 and h == 300
+
+    test_dimension = (1920, 1080)
+    download_photo(test_url, out_directory, "scaled.png", test_dimension)
+    with Image.open(os.path.join(out_directory, "scaled.png")) as img:
+        for desired, actual in zip(test_dimension, img.size):
+            assert desired == actual
+
+    shutil.rmtree(out_directory)
