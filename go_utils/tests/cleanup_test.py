@@ -7,7 +7,9 @@ import pytest
 from go_utils.cleanup import (
     adjust_timezones,
     camel_case,
+    filter_duplicates,
     filter_invalid_coords,
+    filter_poor_geolocational_data,
     remove_homogenous_cols,
     rename_latlon_cols,
     replace_column_prefix,
@@ -204,3 +206,62 @@ def test_null_standardize():
     assert not output_df.equals(df)
     standardize_null_vals(df, ".", inplace=True)
     assert output_df.equals(df)
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+def test_duplicate_filter():
+    df = pd.DataFrame.from_dict(
+        {
+            "Latitude": [5, 5, 7, 8],
+            "Longitude": [6, 6, 10, 2],
+            "attribute1": ["foo", "foo", "foo", "bar"],
+            "attribute2": ["baz", "baz", "baz", "baz"],
+        }
+    )
+
+    filtered_df = filter_duplicates(df, ["Latitude", "Longitude", "attribute1"], 2)
+
+    assert not np.any(
+        (filtered_df["Latitude"] == 5)
+        & (filtered_df["Longitude"] == 6)
+        & (filtered_df["attribute1"] == "foo")
+    )
+
+    filtered_df = filter_duplicates(df, ["attribute1", "attribute2"], 3)
+    assert not np.any(
+        (filtered_df["attribute1"] == "foo") & (filtered_df["attribute2"] == "baz")
+    )
+
+    assert not filtered_df.equals(df)
+    filter_duplicates(df, ["attribute1", "attribute2"], 3, True)
+    assert filtered_df.equals(df)
+
+
+@pytest.mark.util
+@pytest.mark.cleanup
+def test_poor_geolocational_data_filter():
+    df = pd.DataFrame.from_dict(
+        {
+            "Latitude": [36.5, 37.8, 39.2, 30, 19.2],
+            "Longitude": [95.2, 28.6, 15, 13.5, 30.8],
+            "MGRSLatitude": [36.5, 37.9, 39.3, 30.2, 19.3],
+            "MGRSLongitude": [95.2, 28.6, 15.5, 14, 30.2],
+        }
+    )
+    filtered_df = filter_poor_geolocational_data(
+        df, "Latitude", "Longitude", "MGRSLatitude", "MGRSLongitude"
+    )
+
+    assert not np.any(
+        (filtered_df["Latitude"] == filtered_df["MGRSLatitude"])
+        & (filtered_df["Longitude"] == filtered_df["MGRSLongitude"])
+    )
+    assert not np.any(filtered_df["Latitude"] == filtered_df["Latitude"].astype(int))
+    assert not np.any(filtered_df["Longitude"] == filtered_df["Longitude"].astype(int))
+
+    assert not filtered_df.equals(df)
+    filter_poor_geolocational_data(
+        df, "Latitude", "Longitude", "MGRSLatitude", "MGRSLongitude", True
+    )
+    assert filtered_df.equals(df)

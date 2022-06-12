@@ -100,7 +100,7 @@ setup(
         "numpy>=1.19.0",
         "pandas>=1.1.5",
         "requests>=2.23.0",
-        "arcgis>=1.8.4",
+        "arcgis==1.9.1",
         "seaborn>=0.11.1",
         "pytz>=2021.3",
         "timezonefinder>=5.2.0",

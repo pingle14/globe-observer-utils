@@ -1,12 +1,14 @@
 import os
 import re
+import warnings
 
 import numpy as np
 import pandas as pd
 import requests
+from PIL import Image
 
 
-def get_globe_photo_id(url):
+def get_globe_photo_id(url: str):
     """
     Gets the GLOBE Photo ID from a url
 
@@ -15,28 +17,36 @@ def get_globe_photo_id(url):
     url : str
       A url to a GLOBE Observer Image
     """
-    photo_id = re.search(r"(?<=\d\d\d\d\/\d\d\/\d\d\/).*(?=\/)", url).group(0)
-    return photo_id
+    if pd.isna(url):
+        return None
+    else:
+        match_obj = re.search(r"(?<=\d\d\d\d\/\d\d\/\d\d\/).*(?=\/)", url)
+        if match_obj:
+            photo_id = match_obj.group(0)
+            return photo_id
+    return None
 
 
-def remove_bad_characters(filename):
+def remove_bad_characters(filename: str):
     """
     Removes erroneous characters from filenames. This includes the `/` character as this is assuming that the filename is being passed, not a path that may include that symbol as part of a directory.
 
     Parameters
     ----------
     filename : str
-      A possible filename
+      A possible filename.
 
     Returns
     -------
     str
         The filename without any erroneous characters
     """
+    if pd.isna(filename):
+        return None
     return re.sub(r"[<>:?\"/\\|*]", "", filename)
 
 
-def download_photo(url, directory, filename):
+def download_photo(url: str, directory: str, filename: str, resolution=None):
     """
     Downloads a photo to a directory.
 
@@ -48,12 +58,53 @@ def download_photo(url, directory, filename):
         The directory that the photo should be saved in
     filename : str
         The name of the photo
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
     """
-    downloaded_obj = requests.get(url, allow_redirects=True)
-    filename = remove_bad_characters(filename)
-    out_path = os.path.join(directory, filename)
-    with open(out_path, "wb") as file:
-        file.write(downloaded_obj.content)
+    if any(pd.isna(x) for x in [url, directory, filename]):
+        msg = f"Either url ({url}), directory ({directory}), or filename ({filename}) was None."
+        warnings.warn(msg)
+    else:
+        downloaded_obj = requests.get(url, allow_redirects=True)
+        filename = remove_bad_characters(filename)
+        out_path = os.path.join(directory, filename)
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+        if pd.isna(resolution):
+            with open(out_path, "wb") as file:
+                file.write(downloaded_obj.content)
+        else:
+            get_img_at_resolution(url, out_path, resolution)
+
+
+def get_img_at_resolution(url, path, resolution):
+    """
+    Downloads an image from a url at a specified resolution
+
+    Parameters
+    ----------
+    url : str
+        An image URL
+    path : str
+        The filepath to save the image to
+    resolution : tuple of int
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image.
+    """
+
+    def get_img():
+        with Image.open(requests.get(url, stream=True).raw) as img:
+            img.resize(resolution).save(path)
+
+    try:
+        get_img()
+    except Exception as e:  # Sometimes the image download fails and it has to be rerun
+        warnings.warn(f"{url} failed due to {repr(e)}, retrying...")
+        try:
+            get_img()
+            warnings.warn("retry successful")
+        except Exception as e:
+            warnings.warn(f"{url} failed: {repr(e)}")
+            return
 
 
 def download_all_photos(targets):
@@ -63,18 +114,65 @@ def download_all_photos(targets):
     Parameters
     ----------
     targets : list of tuple of str
-        Contains tuples that store the url, directory, and filename of the desired photos to be downloaded in that order.
+        Contains tuples that store the url, directory, filename, and resolution (will be None to get original photo resolution) of the desired photos to be downloaded in that order.
     """
-    for target in targets:
-        download_photo(*target)
+    expectedNumParams = 4
+    if pd.isna(targets):
+        warnings.warn("Targets was none")
+    else:
+        for target in targets:
+            if (type(target) is tuple) and len(target) == expectedNumParams:
+                download_photo(*target)
+            else:
+                warnings.warn(f"Target incorrectly formatted: {target}")
 
 
-def _format_param_name(name):
+def _format_param_name(name: str):
+    if pd.isna(name):
+        return None
     return (
         "".join(s.capitalize() + " " for s in name.split("_"))
         .replace("Photo", "")
         .strip()
     )
+
+
+# Constructs Photo Name using given included fields and additional information
+def _build_photo_name(
+    protocol, photo_id, name_fields, include_in_name=[], additional_name_stem=""
+):
+    valid_protocols = ["lc_", "mhm_"]
+    if not protocol or protocol not in valid_protocols:
+        warnings.warn("Invalid protocol")
+        return None
+    name = protocol
+    if additional_name_stem and additional_name_stem != "":
+        name += f"{additional_name_stem}_"
+
+    if include_in_name:
+        for field in list(include_in_name):
+            if field in set(name_fields):
+                name += f"{name_fields[field]}_"
+
+    name += f"{photo_id}.png"
+    name = remove_bad_characters(name)
+    return name
+
+
+def _get_mosquito_classification(genus, species):
+    classification = genus
+    if pd.isna(classification):
+        classification = "None"
+    elif not pd.isna(species):
+        classification = f"{classification} {species}"
+    return classification
+
+
+def _warn_num_invalid_photos(num_invalid_photos: dict):
+    if sum(num_invalid_photos.values()) > 0:
+        msg = f"Skipped {sum(num_invalid_photos.values())} invalid photos: "
+        msg += str(num_invalid_photos)
+        warnings.warn(msg)
 
 
 def get_mhm_download_targets(
@@ -90,6 +188,9 @@ def get_mhm_download_targets(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
+    include_in_name=[],
+    additional_name_stem="",
+    resolution=None,
 ):
     """
     Generates mosquito habitat mapper targets to download
@@ -120,6 +221,20 @@ def get_mhm_download_targets(
         The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
+    include_in_name : list of str, default=[]
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        Accepted Included Names include:
+            * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+            * `watersource` -- Watersource for the observed mosquito habitat
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `mhm_id` -- Unique ID for a MHM observation
+            * `classification` -- Mosquito classification (or `"None"` if no classification available)
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
@@ -128,6 +243,12 @@ def get_mhm_download_targets(
     """
     arguments = locals()
     targets = set()
+    num_invalid_photos = {
+        "invalid_URL": 0,
+        "rejected": 0,
+        "pending": 0,
+        "bad_photo_id": 0,
+    }
 
     def get_photo_args(
         url_entry,
@@ -145,19 +266,40 @@ def get_mhm_download_targets(
 
         urls = url_entry.split(";")
         date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
-        for url in urls:
-            if pd.isna(url) or "https" not in url:
-                continue
-            photo_id = get_globe_photo_id(url)
 
-            classification = genus
-            if pd.isna(classification):
-                classification = "None"
-            elif not pd.isna(species):
-                classification = f"{classification} {species}"
-            name = f"mhm_{url_type}_{watersource}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{mhm_id}_{classification}_{photo_id}.png"
-            name = remove_bad_characters(name)
-            targets.add((url, directory, name))
+        for url in urls:
+            if not pd.isna(url) and "https" in url:
+                photo_id = get_globe_photo_id(url)
+
+                name_fields = {
+                    "url_type": url_type,
+                    "watersource": watersource,
+                    "latitude": round(latitude, 5),
+                    "longitude": round(longitude, 5),
+                    "date_str": date_str,
+                    "mhm_id": mhm_id,
+                    "classification": _get_mosquito_classification(genus, species),
+                }
+
+                # Checks photo_id is valid
+                if not pd.isna(photo_id) and int(photo_id) >= 0:
+                    protocol = "mhm_"
+                    name = _build_photo_name(
+                        protocol,
+                        photo_id,
+                        name_fields,
+                        include_in_name,
+                        additional_name_stem,
+                    )
+                    targets.add((url, directory, name, resolution))
+                else:
+                    num_invalid_photos["bad_photo_id"] += 1
+            elif not pd.isna(url) and "rejected" in url:
+                num_invalid_photos["rejected"] += 1
+            elif not pd.isna(url) and "pending" in url:
+                num_invalid_photos["pending"] += 1
+            else:
+                num_invalid_photos["invalid_URL"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -174,6 +316,7 @@ def get_mhm_download_targets(
                 mhm_df[genus_col].to_numpy(),
                 mhm_df[species_col].to_numpy() if species_col else "",
             )
+    _warn_num_invalid_photos(num_invalid_photos)
     return targets
 
 
@@ -190,6 +333,9 @@ def download_mhm_photos(
     larvae_photo="mhm_LarvaFullBodyPhotoUrls",
     watersource_photo="mhm_WaterSourcePhotoUrls",
     abdomen_photo="mhm_AbdomenCloseupPhotoUrls",
+    include_in_name=[],
+    additional_name_stem="",
+    resolution=None,
 ):
     """
     Downloads mosquito habitat mapper photos
@@ -220,14 +366,26 @@ def download_mhm_photos(
         The column name of the column that contains the watersource photo urls. If not specified, the larvae photos will not be included.
     abdomen_photo : str, default = "mhm_AbdomenCloseupPhotoUrls"
         The column name of the column that contains the abdomen photo urls. If not specified, the larvae photos will not be included.
+    include_in_name : list of str, default=[]
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name list of column names to include into the downloaded photo names
+        Accepted Included Names include:
+            * `url_type` -- Type of photo (e.g. Watersource, Larvae, Abdomen)
+            * `watersource` -- Watersource for the observed mosquito habitat
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `mhm_id` -- Unique ID for a MHM observation
+            * `classification` -- Mosquito classification (or `"None"` if no classification available)
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
     set of tuple of str
         Contains the (url, directory, and filename) for each desired mosquito habitat mapper photo
     """
-    if not os.path.exists(directory):
-        os.mkdir(directory)
     targets = get_mhm_download_targets(**locals())
     download_all_photos(targets)
     return targets
@@ -246,6 +404,9 @@ def get_lc_download_targets(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
+    include_in_name=[],
+    additional_name_stem="",
+    resolution=None,
 ):
     """
     Generates landcover targets to download
@@ -276,6 +437,18 @@ def get_lc_download_targets(
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
+    include_in_name : list of str, default=[]
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        Accepted Included Names include:
+            * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `lc_id` -- Unique ID for a LC observation
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
@@ -284,17 +457,44 @@ def get_lc_download_targets(
     """
     arguments = locals()
     targets = set()
+    num_invalid_photos = {
+        "invalid_URL": 0,
+        "rejected": 0,
+        "pending": 0,
+        "bad_photo_id": 0,
+    }
 
     def get_photo_args(url, latitude, longitude, direction, date, lc_id):
-        if pd.isna(url) or "https" not in url:
-            return
+        if not pd.isna(url) and "https" in url:
+            date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
+            photo_id = get_globe_photo_id(url)
 
-        date_str = pd.to_datetime(str(date)).strftime("%Y-%m-%d")
-        photo_id = get_globe_photo_id(url)
+            name_fields = {
+                "direction": direction,
+                "latitude": round(latitude, 5),
+                "longitude": round(longitude, 5),
+                "date_str": date_str,
+                "lc_id": lc_id,
+            }
 
-        name = f"lc_{direction}_{round(latitude, 5)}_{round(longitude, 5)}_{date_str}_{lc_id}_{photo_id}.png"
-        name = remove_bad_characters(name)
-        targets.add((url, directory, name))
+            if not pd.isna(photo_id) and int(photo_id) >= 0:
+                protocol = "lc_"
+                name = _build_photo_name(
+                    protocol,
+                    photo_id,
+                    name_fields,
+                    include_in_name,
+                    additional_name_stem,
+                )
+                targets.add((url, directory, name, resolution))
+            else:
+                num_invalid_photos["bad_photo_id"] += 1
+        elif not pd.isna(url) and "rejected" in url:
+            num_invalid_photos["rejected"] += 1
+        elif not pd.isna(url) and "pending" in url:
+            num_invalid_photos["pending"] += 1
+        else:
+            num_invalid_photos["invalid_URL"] += 1
 
     photo_locations = {k: v for k, v in arguments.items() if "photo" in k}
     for param_name, column_name in photo_locations.items():
@@ -308,7 +508,7 @@ def get_lc_download_targets(
                 lc_df[date_col],
                 lc_df[id_col].to_numpy(),
             )
-
+    _warn_num_invalid_photos(num_invalid_photos)
     return targets
 
 
@@ -325,6 +525,9 @@ def download_lc_photos(
     south_photo="lc_SouthPhotoUrl",
     east_photo="lc_EastPhotoUrl",
     west_photo="lc_WestPhotoUrl",
+    include_in_name=[],
+    additional_name_stem="",
+    resolution=None,
 ):
     """
     Downloads Landcover photos for landcover data.
@@ -355,15 +558,24 @@ def download_lc_photos(
         The column name of the column that contains the east photo urls. If not specified, these photos will not be included.
     west_photo : str, default = "lc_WestPhotoUrl"
         The column name of the column that contains the west photo urls. If not specified, these photos will not be included.
+    include_in_name : list of str, default=[]
+        A list of column names to include into the downloaded photo names. The order of items in this list is maintained in the outputted name
+        Accepted Included Names include:
+            * `direction` -- Direction where the photo was taken (e.g. North, South, East, West, Up, Down)
+            * `latitude` -- GPS Latitude Coordinate (rounded to 5 decimal places)
+            * `longitude` -- GPS Longitude Coordinate (rounded to 5 decimal places)
+            * `date_str` -- Date Range expressed as a String
+            * `lc_id` -- Unique ID for a LC observation
+    additional_name_stem : str, default=""
+        Additional custom information the user can add to the name.
+    resolution : tuple of int, default = None
+        The image resolution in width x height. e.g. (1920, 1080) for a 1080p image. If the resolution is None, the original resolution of the photo is downloaded.
 
     Returns
     -------
     set of tuple of str
         Contains the (url, directory, and filename) for each desired land cover photo
     """
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-
     targets = get_lc_download_targets(**locals())
     download_all_photos(targets)
     return targets

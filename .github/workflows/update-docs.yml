@@ -1,0 +1,34 @@
+on: 
+  release:
+      types: [published]
+  workflow_dispatch:
+  
+jobs:
+  documentation:
+    name: Publish documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Clone docs repo
+        run:
+          git clone https://github.com/IGES-Geospatial/globe-observer-utils-docs.git
+      - name: Generate Docs
+        run: |
+          pip install -e .
+          pip install pdoc
+          pdoc --t doc_template --docformat numpy -o globe-observer-utils-docs go_utils/.
+      - name: Push docs to doc repo
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: 'globe-observer-utils-docs'
+          destination-github-username: 'IGES-Geospatial'
+          destination-repository-name: 'globe-observer-utils-docs'
+          user-email: uploadingacct71@gmail.com
+          target-branch: main

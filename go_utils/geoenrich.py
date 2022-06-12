@@ -43,8 +43,8 @@ def get_country_api_data(
     """
 
     item_id_dict = {
-        mosquito_protocol: "8bc5b0ac24d3474e9ab6ce2bfb4f37fe",
-        landcover_protocol: "c68acbfc68db4409b495fd4636646aa6",
+        mosquito_protocol: "a018521fbc3f42bc848d3fa4c52e02ce",
+        landcover_protocol: "fe54b831415f44d2b1640327ae276fb8",
     }
 
     if protocol not in item_id_dict:
@@ -85,16 +85,18 @@ def get_country_api_data(
     if is_clean:
         df = default_data_clean(df, protocol)
 
-    if countries:
-        df = _get_valid_countries(df, protocol, countries)
+    for region in regions:
+        countries.extend(region_dict[region])
+    countries_set = set(countries)
+    # Return the regular data if nothing is specified
+    if not countries_set:
+        return df
+    else:
+        mask = _get_valid_countries_mask(df, protocol, countries_set)
+        return df[mask]
 
-    if regions:
-        for region in regions:
-            df = _get_valid_countries(df, protocol, region_dict[region])
-    return df
 
-
-def _get_valid_countries(df, protocol, country_list):
+def _get_valid_countries_mask(df, protocol, country_list):
     country_filter = np.vectorize(lambda country_col: country_col in country_list)
     mask = country_filter(df[f"{abbreviation_dict[protocol]}_COUNTRY"].to_numpy())
-    return df[mask]
+    return mask
