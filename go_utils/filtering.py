@@ -181,3 +181,39 @@ def filter_poor_geolocational_data(
     )
 
     return filter_out_entries(df, bad_data, False, inplace)
+
+
+def filter_by_globe_team(
+    df, globe_teams_column, target_teams, exclude=False, inplace=False
+):
+    """
+    Finds or filters out specific globe teams.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to filter
+    globe_teams_column : str
+        The column containing the GLOBE teams.
+    target_teams : list of str
+        The names of the GLOBE teams to be used.
+    exclude : bool, default=False
+        Whether to exclude the specified teams from the dataset.
+    inplace : bool, default=False
+        Whether to return a new DataFrame. If True then no DataFrame copy is not returned and the operation is performed in place.
+    Returns
+    -------
+    pd.DataFrame or None
+        A DataFrame with only the specified GLOBE teams (if exclude is False) or without the specified GLOBE teams (if exclude is True). If `inplace=True` it returns None.
+    """
+
+    def is_desired_team(team_list):
+        if not exclude:
+            return any([team in team_list for team in target_teams])
+        else:
+            return all([team not in team_list for team in target_teams])
+
+    desired_team_filter = np.vectorize(is_desired_team)
+    desired_data_mask = desired_team_filter(df[globe_teams_column].to_numpy())
+
+    return filter_out_entries(df, desired_data_mask, True, inplace)

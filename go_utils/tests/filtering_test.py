@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from go_utils.filtering import (
+    filter_by_globe_team,
     filter_duplicates,
     filter_invalid_coords,
     filter_out_entries,
@@ -37,6 +38,35 @@ def test_filtering_util(mask, include, desired_indexes):
 
     assert not filtered_df.equals(df)
     filter_out_entries(df, np_mask, include, True)
+    assert filtered_df.equals(df)
+
+
+teams_df = pd.DataFrame.from_dict(
+    {"Teams": [["A", "D", "E"], ["C", "B", "A"], ["D"], ["E", "B"], ["C", "A"]]}
+)
+
+teams_test_data = [
+    (["A", "B"], False, [0, 1, 3, 4]),
+    (["D"], False, [0, 2]),
+    (["A"], True, [2, 3]),
+    (["A", "E"], True, [2]),
+]
+
+
+@pytest.mark.util
+@pytest.mark.filtering
+@pytest.mark.parametrize("desired_teams, exclude, desired_indexes", teams_test_data)
+def test_teams_filtering(desired_teams, exclude, desired_indexes):
+    df = teams_df.copy()
+    filtered_df = filter_by_globe_team(df, "Teams", desired_teams, exclude)
+    indexes = filtered_df.index.values.tolist()
+
+    assert len(indexes) == len(desired_indexes)
+    for index in indexes:
+        assert index in desired_indexes
+
+    assert not filtered_df.equals(df)
+    filter_by_globe_team(df, "Teams", desired_teams, exclude, True)
     assert filtered_df.equals(df)
 
 
