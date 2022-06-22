@@ -42,14 +42,24 @@ def test_filtering_util(mask, include, desired_indexes):
 
 
 teams_df = pd.DataFrame.from_dict(
-    {"Teams": [["A", "D", "E"], ["C", "B", "A"], ["D"], ["E", "B"], ["C", "A"]]}
+    {
+        "Teams": [
+            ["A", "D", "E"],
+            ["C", "B", "A"],
+            ["D"],
+            ["E", "B"],
+            ["C", "A"],
+            np.nan,
+            [],
+        ]
+    }
 )
 
 teams_test_data = [
     (["A", "B"], False, [0, 1, 3, 4]),
     (["D"], False, [0, 2]),
-    (["A"], True, [2, 3]),
-    (["A", "E"], True, [2]),
+    (["A"], True, [2, 3, 6]),
+    (["A", "E"], True, [2, 6]),
 ]
 
 

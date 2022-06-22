@@ -1,4 +1,5 @@
 import numpy as np
+from pandas.api.types import is_hashable
 
 __doc__ = """
 # Overview
@@ -209,9 +210,19 @@ def filter_by_globe_team(
 
     def is_desired_team(team_list):
         if not exclude:
-            return any([team in team_list for team in target_teams])
+            return any(
+                [
+                    team in team_list if not is_hashable(team_list) else False
+                    for team in target_teams
+                ]
+            )
         else:
-            return all([team not in team_list for team in target_teams])
+            return all(
+                [
+                    team not in team_list if not is_hashable(team_list) else False
+                    for team in target_teams
+                ]
+            )
 
     desired_team_filter = np.vectorize(is_desired_team)
     desired_data_mask = desired_team_filter(df[globe_teams_column].to_numpy())
