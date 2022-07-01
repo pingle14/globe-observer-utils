@@ -88,7 +88,7 @@ def test_duplicate_filter():
             "Latitude": [5, 5, 7, 8],
             "Longitude": [6, 6, 10, 2],
             "attribute1": ["foo", "foo", "foo", "bar"],
-            "attribute2": ["baz", "baz", "baz", "baz"],
+            "attribute2": [np.nan, "baz", "baz", "baz"],
         }
     )
 
@@ -100,13 +100,13 @@ def test_duplicate_filter():
         & (filtered_df["attribute1"] == "foo")
     )
 
-    filtered_df = filter_duplicates(df, ["attribute1", "attribute2"], 3)
+    filtered_df = filter_duplicates(df, ["attribute1", "attribute2"], 2)
     assert not np.any(
         (filtered_df["attribute1"] == "foo") & (filtered_df["attribute2"] == "baz")
     )
 
     assert not filtered_df.equals(df)
-    filter_duplicates(df, ["attribute1", "attribute2"], 3, True)
+    filter_duplicates(df, ["attribute1", "attribute2"], 2, True)
     print(filtered_df)
     print(df)
     assert filtered_df.equals(df)

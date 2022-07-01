@@ -126,7 +126,7 @@ def filter_duplicates(df, columns, group_size, inplace=False):
     # groups / filters suspected events
     suspect_df = df.groupby(by=columns).filter(lambda x: len(x) >= group_size)
     suspect_mask = df.isin(suspect_df)
-    suspect_mask = np.all(suspect_mask, axis=1)
+    suspect_mask = np.any(suspect_mask, axis=1)
 
     return filter_out_entries(df, suspect_mask, False, inplace)
 
