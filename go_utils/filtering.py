@@ -8,13 +8,14 @@ The following sections discuss some of the logic and context behind these method
 
 # Methods
 
-## Filter Invalid Coords
+## [Filter Invalid Coords](#filter_invalid_coords)
 Certain entries in the GLOBE Database have latitudes and longitudes that don't exist.
 
-## Filter Duplicates
-Due to reasons like GLOBE Observer trainings among other things, there are oftentimes multiple observations of the same exact entry. This can lead to a decrease in data quality and so this utility can be used to reduce this. Groups of entries that share the same MGRS Latitude, NGRS Longitude, measured date, and other dataset specific attributes (e.g. water source) could likely be duplicate entries. In (Low, et. al)[https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021GH000436], Mosquito Habitat Mapper duplicates are removed by groups of size greater than 10 sharing MGRS Latitude, MGRS Longitude, Water source, and Sitename values.
+## [Filter Duplicates](filter_duplicates)
+Due to reasons like GLOBE Observer trainings among other things, there are oftentimes multiple observations of the same exact entry. This can lead to a decrease in data quality and so this utility can be used to reduce this. Groups of entries that share the same MGRS Latitude, NGRS Longitude, measured date, and other dataset specific attributes (e.g. water source) could likely be duplicate entries. In [Low, et. al](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021GH000436), Mosquito Habitat Mapper duplicates are removed by groups of size greater than 10 sharing MGRS Latitude, MGRS Longitude, measuredDate, Water source, and Sitename values.
+Do note, however, the filter by default includes the first entry of each duplicate group which is unlike the procedure in Low, et al. as all duplicate entries were dropped.
 
-## Filter Poor Geolocational Data
+## [Filter Poor Geolocational Data](filter_by_globe_team)
 Geolocational data may not be the most accurate. As a result, this runs a relatively naive check to remove poor geolocational data. More specifically, if the MGRS coordinates match up with the GPS coordinates or the GPS coordinates are whole numbers, then the entry is considered poor quality.
 """
 
@@ -99,7 +100,7 @@ def filter_invalid_coords(
     return filter_out_entries(df, mask, True, inplace)
 
 
-def filter_duplicates(df, columns, group_size, inplace=False):
+def filter_duplicates(df, columns, group_size, keep_first=True, inplace=False):
     """
     Filters possible duplicate data by grouping together suspiciously similar entries.
 
@@ -125,6 +126,8 @@ def filter_duplicates(df, columns, group_size, inplace=False):
 
     # groups / filters suspected events
     suspect_df = df.groupby(by=columns).filter(lambda x: len(x) >= group_size)
+    if keep_first:
+        suspect_df = suspect_df.groupby(by=columns, as_index=False).nth[1:]
     suspect_mask = df.isin(suspect_df)
     suspect_mask = np.any(suspect_mask, axis=1)
 

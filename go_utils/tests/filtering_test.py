@@ -80,33 +80,54 @@ def test_teams_filtering(desired_teams, exclude, desired_indexes):
     assert filtered_df.equals(df)
 
 
-@pytest.mark.util
-@pytest.mark.filtering
-def test_duplicate_filter():
-    df = pd.DataFrame.from_dict(
+duplicates_test_data = [
+    (
         {
             "Latitude": [5, 5, 7, 8],
             "Longitude": [6, 6, 10, 2],
             "attribute1": ["foo", "foo", "foo", "bar"],
             "attribute2": [np.nan, "baz", "baz", "baz"],
-        }
-    )
+        },
+        ["Latitude", "Longitude", "attribute1"],
+        2,
+        [True, False, True, True],
+        [False, False, True, True],
+    ),
+    (
+        {
+            "Latitude": [5, 5, 7, 8],
+            "Longitude": [6, 6, 10, 2],
+            "attribute1": ["foo", "foo", "foo", "bar"],
+            "attribute2": [np.nan, "baz", "baz", "baz"],
+        },
+        ["attribute1", "attribute2"],
+        2,
+        [True, True, False, True],
+        [True, False, False, True],
+    ),
+]
 
-    filtered_df = filter_duplicates(df, ["Latitude", "Longitude", "attribute1"], 2)
 
-    assert not np.any(
-        (filtered_df["Latitude"] == 5)
-        & (filtered_df["Longitude"] == 6)
-        & (filtered_df["attribute1"] == "foo")
-    )
+@pytest.mark.util
+@pytest.mark.filtering
+@pytest.mark.parametrize(
+    "test_data, cols, group_size, keep_first_desired, not_keep_first_desired",
+    duplicates_test_data,
+)
+def test_duplicate_filter(
+    test_data, cols, group_size, keep_first_desired, not_keep_first_desired
+):
+    df = pd.DataFrame.from_dict(test_data)
 
-    filtered_df = filter_duplicates(df, ["attribute1", "attribute2"], 2)
-    assert not np.any(
-        (filtered_df["attribute1"] == "foo") & (filtered_df["attribute2"] == "baz")
-    )
+    filtered_df = filter_duplicates(df, cols, group_size, False)
+    desired_mask = np.array(not_keep_first_desired)
+    assert filtered_df.equals(df[desired_mask])
 
-    assert not filtered_df.equals(df)
-    filter_duplicates(df, ["attribute1", "attribute2"], 2, True)
+    filtered_df = filter_duplicates(df, cols, group_size)
+    desired_mask = np.array(keep_first_desired)
+
+    assert filtered_df.equals(df[desired_mask])
+    filter_duplicates(df, cols, group_size, inplace=True)
     print(filtered_df)
     print(df)
     assert filtered_df.equals(df)
