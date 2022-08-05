@@ -1,4 +1,5 @@
 import argparse
+import csv
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -111,7 +112,15 @@ def mhm_data_download():
     df = mhm.qa_filter(df, **filter_args)
 
     if args.out:
-        df.to_csv(args.out)
+        df.to_csv(
+            args.out,
+            sep=",",
+            index=False,
+            encoding="utf-8",
+            quoting=csv.QUOTE_ALL,
+            quotechar='"',
+            escapechar="”",
+        )
     else:
         mhm.diagnostic_plots(df)
         plt.show()
@@ -159,7 +168,15 @@ def lc_data_download():
     df = lc.qa_filter(df, **filter_args)
 
     if args.out:
-        df.to_csv(args.out)
+        df.to_csv(
+            args.out,
+            sep=",",
+            index=False,
+            encoding="utf-8",
+            quoting=csv.QUOTE_ALL,
+            quotechar='"',
+            escapechar="”",
+        )
     else:
         lc.diagnostic_plots(df)
         plt.show()
